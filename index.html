@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SPY SMA200 signal dashboard for SSO/Cash positioning">
+  <title>SPY/SSO Signal Desk</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="loadingState" class="state-screen"><div class="spinner"></div><p>Loading SPY/SSO signal data…</p></div>
+  <div id="errorState" class="state-screen hidden">
+    <i data-lucide="triangle-alert"></i>
+    <h2>Signal data could not be loaded</h2>
+    <p id="errorMessage">Check the data file or import a replacement.</p>
+    <button class="button primary" data-open-view="settings"><i data-lucide="upload"></i>Open import tools</button>
+  </div>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#dashboard" aria-label="SPY SSO Signal Desk home">
+        <span class="brand-mark">S2</span>
+        <span><strong>SSO Signal Desk</strong><small>SPY SMA200 model</small></span>
+      </a>
+      <nav id="primaryNav" aria-label="Primary navigation">
+        <button class="nav-link active" data-view="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="nav-link" data-view="daily"><i data-lucide="table-2"></i><span>Daily Data</span></button>
+        <button class="nav-link" data-view="account"><i data-lucide="wallet-cards"></i><span>Real Account</span></button>
+        <button class="nav-link" data-view="trades"><i data-lucide="book-open-check"></i><span>Trade Log</span></button>
+        <button class="nav-link" data-view="calendar"><i data-lucide="calendar-range"></i><span>Calendar Cycles</span></button>
+        <button class="nav-link" data-view="spreads"><i data-lucide="activity"></i><span>Spread Cycles</span></button>
+        <button class="nav-link" data-view="rules"><i data-lucide="scroll-text"></i><span>Rules</span></button>
+        <button class="nav-link" data-view="settings"><i data-lucide="settings-2"></i><span>Settings</span></button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot" id="sidebarFreshDot"></span>
+        <span id="sidebarFreshText">Checking freshness</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="mobileMenu" class="icon-button mobile-only" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+        <div>
+          <h1 id="viewTitle">SPY/SSO Signal Desk</h1>
+          <p id="viewSubtitle">Operational close-to-next-day tracking for the SPY SMA200 / SSO strategy.</p>
+        </div>
+        <div class="topbar-actions">
+          <span id="freshnessBadge" class="badge neutral">Loading</span>
+          <button id="themeToggle" class="icon-button" aria-label="Toggle theme"><i data-lucide="moon"></i></button>
+        </div>
+      </header>
+
+      <section id="view-dashboard" class="view active">
+        <div class="dashboard-lead">
+          <article id="positionPanel" class="position-panel">
+            <div class="eyeline">Current model position</div>
+            <div class="position-line">
+              <span id="currentPosition">—</span>
+              <span id="currentAction" class="action-badge">—</span>
+            </div>
+            <p id="latestReason">Loading the latest completed close.</p>
+            <div class="position-meta">
+              <span><i data-lucide="calendar-check"></i><b id="latestDate">—</b> latest close</span>
+              <span><i data-lucide="clock-3"></i>Applies next trading day</span>
+            </div>
+          </article>
+          <article class="lead-comparison">
+            <div>
+              <span class="metric-label">Strategy value</span>
+              <strong id="strategyValue">—</strong>
+            </div>
+            <div>
+              <span class="metric-label">SPY Hold</span>
+              <strong id="benchmarkValue">—</strong>
+            </div>
+            <div>
+              <span class="metric-label">Lead / lag</span>
+              <strong id="leadLag">—</strong>
+              <small id="leadLagPct">—</small>
+            </div>
+          </article>
+        </div>
+
+        <div class="metric-grid" id="dashboardMetrics">
+          <article class="metric"><span class="metric-label">SPY close</span><strong id="spyClose">—</strong><small>Adjusted close</small></article>
+          <article class="metric"><span class="metric-label">SSO close</span><strong id="ssoClose">—</strong><small>Actual adjusted close</small></article>
+          <article class="metric"><span class="metric-label">SPY SMA200 <button class="tip" title="Simple average of the latest 200 SPY adjusted closes">?</button></span><strong id="sma200">—</strong><small>Signal indicator</small></article>
+          <article class="metric"><span class="metric-label">Upper buy threshold</span><strong id="buyThreshold">—</strong><small>SMA200 × 1.01</small></article>
+          <article class="metric"><span class="metric-label">Lower sell threshold</span><strong id="sellThreshold">—</strong><small>SMA200 × 0.99</small></article>
+          <article class="metric"><span class="metric-label">SPY / SMA spread <button class="tip" title="SPY adjusted close divided by SMA200, minus one">?</button></span><strong id="spread">—</strong><small>Informational only</small></article>
+          <article class="metric"><span class="metric-label">Current drawdown</span><strong id="currentDrawdown">—</strong><small>From strategy peak</small></article>
+          <article class="metric"><span class="metric-label">Maximum drawdown</span><strong id="maxDrawdown">—</strong><small>Since 2006-06-21</small></article>
+        </div>
+
+        <div class="section-split">
+          <article class="surface">
+            <div class="section-heading">
+              <div><h2>Current spread cycle</h2><p>Context for the open SSO buy-to-sell cycle.</p></div>
+              <span class="badge info">Informational only</span>
+            </div>
+            <div class="cycle-strip">
+              <div><span>Cycle</span><strong id="cycleNumber">—</strong></div>
+              <div><span>High-range floor</span><strong id="cycleFloor">—</strong></div>
+              <div><span>Maximum spread</span><strong id="cycleMax">—</strong><small id="cycleMaxDate">—</small></div>
+              <div><span>Latest in high range?</span><strong id="inHighRange">—</strong></div>
+            </div>
+          </article>
+          <article class="surface">
+            <div class="section-heading"><div><h2>Data status</h2><p>What the desk is currently using.</p></div></div>
+            <dl class="status-list">
+              <div><dt>Completed close</dt><dd id="statusCloseDate">—</dd></div>
+              <div><dt>Generated</dt><dd id="generatedAt">—</dd></div>
+              <div><dt>Source</dt><dd id="dataSource">—</dd></div>
+              <div><dt>Rows</dt><dd id="rowCount">—</dd></div>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-daily" class="view">
+        <div class="toolbar">
+          <label class="search"><i data-lucide="search"></i><input id="dailySearch" type="search" placeholder="Search date, signal, position, or reason"></label>
+          <div class="toolbar-actions">
+            <label class="button"><i data-lucide="upload"></i>Import CSV<input id="dailyImport" type="file" accept=".csv,text/csv" hidden></label>
+            <button id="exportDaily" class="button"><i data-lucide="download"></i>Export CSV</button>
+          </div>
+        </div>
+        <div id="importError" class="inline-alert hidden"></div>
+        <div class="table-shell">
+          <table id="dailyTable">
+            <thead><tr>
+              <th data-sort="date">Date</th><th data-sort="spy_close">SPY</th><th data-sort="sso_close">SSO</th>
+              <th data-sort="sma200">SMA200</th><th data-sort="spread">Spread</th><th>Buy / sell bands</th>
+              <th data-sort="signal">Signal</th><th data-sort="position">Position</th><th>Strategy return</th>
+              <th>Strategy value</th><th>SPY Hold</th><th>Strategy DD</th><th>SPY DD</th>
+            </tr></thead>
+            <tbody id="dailyBody"></tbody>
+          </table>
+          <div id="dailyEmpty" class="empty-state hidden"><i data-lucide="inbox"></i><p>No matching daily rows.</p></div>
+        </div>
+        <div class="pagination"><button id="dailyPrev" class="button">Previous</button><span id="dailyPage">—</span><button id="dailyNext" class="button">Next</button></div>
+      </section>
+
+      <section id="view-account" class="view">
+        <div class="form-grid">
+          <article class="surface">
+            <div class="section-heading"><div><h2>Live account inputs</h2><p>Saved only in this browser. Model history is never overwritten.</p></div></div>
+            <form id="accountForm" class="field-grid">
+              <label>Tracking start date<input name="startDate" type="date"></label>
+              <label>Starting account value<input name="startingValue" type="number" min="0" step="0.01"></label>
+              <label>Actual SSO shares<input name="shares" type="number" min="0" step="0.0001"></label>
+              <label>Cash balance<input name="cash" type="number" min="0" step="0.01"></label>
+              <label>Latest actual fill price<input name="fillPrice" type="number" min="0" step="0.01"></label>
+              <label>Account name<input name="accountName" type="text" placeholder="Optional"></label>
+              <button class="button primary" type="submit"><i data-lucide="save"></i>Save account settings</button>
+            </form>
+          </article>
+          <article class="surface">
+            <div class="section-heading"><div><h2>Reconciliation</h2><p>Actual brokerage values versus the model target.</p></div></div>
+            <div class="account-summary">
+              <div><span>SSO market value</span><strong id="actualSsoValue">—</strong></div>
+              <div><span>Total account value</span><strong id="actualTotalValue">—</strong></div>
+              <div><span>Model target</span><strong id="modelTarget">—</strong></div>
+              <div><span>Actual allocation</span><strong id="actualAllocation">—</strong></div>
+              <div class="wide"><span>Reconciliation status</span><strong id="reconciliation">Add account values to begin.</strong></div>
+            </div>
+          </article>
+        </div>
+        <p class="callout"><i data-lucide="shield-check"></i>Actual shares, cash, and fill prices are brokerage records. Model values remain separate and use adjusted closes.</p>
+      </section>
+
+      <section id="view-trades" class="view">
+        <article class="surface">
+          <div class="section-heading"><div><h2 id="tradeFormTitle">Add trade record</h2><p>Edits require an explicit save. Existing rows are never changed automatically.</p></div></div>
+          <form id="tradeForm" class="trade-form">
+            <input type="hidden" name="id">
+            <label>Date<input name="date" type="date" required></label>
+            <label>Action<select name="action"><option>Buy</option><option>Sell</option><option>Correction</option></select></label>
+            <label>Symbol<input name="symbol" value="SSO" required></label>
+            <label>Shares<input name="shares" type="number" step="0.0001" required></label>
+            <label>Fill price<input name="fillPrice" type="number" step="0.01" required></label>
+            <label>Reason<input name="reason" required></label>
+            <label>Account value after trade<input name="accountValue" type="number" step="0.01"></label>
+            <label class="wide">Notes<input name="notes"></label>
+            <div class="form-actions wide"><button class="button primary" type="submit"><i data-lucide="plus"></i><span id="tradeSubmitText">Add record</span></button><button id="cancelTradeEdit" class="button hidden" type="button">Cancel edit</button></div>
+          </form>
+        </article>
+        <div class="toolbar compact"><span id="tradeCount">0 records</span><button id="exportTrades" class="button"><i data-lucide="download"></i>Export trades</button></div>
+        <div class="table-shell"><table><thead><tr><th>Date</th><th>Action</th><th>Symbol</th><th>Shares</th><th>Fill price</th><th>Dollar amount</th><th>Reason</th><th>Notes</th><th>Account value</th><th></th></tr></thead><tbody id="tradeBody"></tbody></table><div id="tradeEmpty" class="empty-state"><i data-lucide="book-dashed"></i><p>No real trades recorded in this browser.</p></div></div>
+      </section>
+
+      <section id="view-calendar" class="view">
+        <div class="toolbar compact">
+          <div class="segmented" id="cycleFilter"><button class="active" data-years="1">1 year</button><button data-years="2">2 years</button><button data-years="3">3 years</button><button data-years="5">5 years</button><button data-years="10">10 years</button></div>
+          <button id="exportCalendar" class="button"><i data-lucide="download"></i>Export</button>
+        </div>
+        <p class="view-note">Each full calendar cycle resets both the strategy and SPY Hold to $1,000 at the cycle start.</p>
+        <div class="table-shell"><table><thead><tr><th>Period</th><th>Dates</th><th>Strategy final</th><th>SPY final</th><th>Strategy return</th><th>SPY return</th><th>Strategy max DD</th><th>SPY max DD</th><th>Beat SPY?</th><th>Positive?</th></tr></thead><tbody id="calendarBody"></tbody></table></div>
+      </section>
+
+      <section id="view-spreads" class="view">
+        <p class="callout warning"><i data-lucide="info"></i>Spread-cycle analysis is informational only. It does not add an exit, profit-taking, or allocation rule.</p>
+        <div class="toolbar compact"><span id="spreadCycleCount">—</span><button id="exportSpreads" class="button"><i data-lucide="download"></i>Export</button></div>
+        <div class="table-shell"><table><thead><tr><th>Cycle</th><th>Status</th><th>Buy date</th><th>Sell date</th><th>Trading days</th><th>Minimum spread</th><th>P90 high-range floor</th><th>Maximum spread</th><th>Maximum date</th><th>High-range days</th></tr></thead><tbody id="spreadBody"></tbody></table></div>
+      </section>
+
+      <section id="view-rules" class="view">
+        <article class="rules-layout">
+          <div>
+            <h2>SPY SMA200 / SSO timing strategy</h2>
+            <p>The model uses SPY adjusted close to decide whether the next trading day should be invested in SSO or held in Cash.</p>
+          </div>
+          <dl class="rule-facts">
+            <div><dt>Signal source</dt><dd>SPY adjusted daily close</dd></div>
+            <div><dt>Indicator</dt><dd>SPY 200-day simple moving average</dd></div>
+            <div><dt>Invested asset</dt><dd>SSO</dd></div>
+            <div><dt>Defensive position</dt><dd>Cash</dd></div>
+            <div><dt>Benchmark</dt><dd>SPY Hold</dd></div>
+            <div><dt>Trade timing</dt><dd>Close signal → next trading day</dd></div>
+          </dl>
+          <div class="rule-section"><h3>Buy or hold SSO</h3><p>When SPY adjusted close is greater than <b>SMA200 × 1.01</b>, the model is in SSO. A new Cash-to-SSO change is recorded as a buy signal after that close.</p></div>
+          <div class="rule-section"><h3>Sell SSO and hold Cash</h3><p>When SPY adjusted close is less than <b>SMA200 × 0.99</b>, the model is in Cash. A new SSO-to-Cash change is recorded as a sell signal after that close.</p></div>
+          <div class="rule-section"><h3>Between the bands</h3><p>Maintain the prior position. If the model already holds SSO, it stays in SSO. If it already holds Cash, it stays in Cash.</p></div>
+          <div class="rule-section"><h3>Return timing</h3><p>The close creates the signal, and the resulting holding earns the following trading day’s return. SSO uses actual adjusted-close returns; Cash earns 0% in the model.</p></div>
+          <div class="rule-section"><h3>Real-account operation</h3><ul><li>Use actual shares, cash, and fill prices for brokerage tracking.</li><li>Do not replace actual fills with theoretical closes.</li><li>Keep real-account values separate from model values.</li><li>Record every trade; use correction rows instead of silently rewriting history.</li><li>Reconcile shares and cash weekly and against the brokerage statement monthly.</li></ul></div>
+          <div class="rule-section"><h3>Spread analysis</h3><p>SPY/SMA200 spread, cycle maximums, and the 90th-percentile high range are context only. They are not trading rules unless a separate strategy is tested and approved.</p></div>
+          <div class="rule-section"><h3>Data rules</h3><p>Use actual SPY and SSO adjusted-close history. Do not synthesize SSO. If the data or signal interpretation is unclear, do not trade until it is checked.</p></div>
+        </article>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="form-grid">
+          <article class="surface">
+            <div class="section-heading"><div><h2>Data and update settings</h2><p>The published model file is replaced by the daily updater or by a deliberate import.</p></div></div>
+            <dl class="status-list padded">
+              <div><dt>Source</dt><dd id="settingsSource">—</dd></div>
+              <div><dt>Market date</dt><dd id="settingsDate">—</dd></div>
+              <div><dt>Generated time</dt><dd id="settingsGenerated">—</dd></div>
+              <div><dt>Daily schedule</dt><dd>6:15 PM America/New_York</dd></div>
+            </dl>
+            <div class="settings-actions">
+              <label class="button primary"><i data-lucide="upload"></i>Import JSON<input id="jsonImport" type="file" accept=".json,application/json" hidden></label>
+              <button id="exportJson" class="button"><i data-lucide="download"></i>Export JSON</button>
+            </div>
+          </article>
+          <article class="surface danger-zone">
+            <div class="section-heading"><div><h2>Browser-local controls</h2><p>These affect only this browser’s account and trade records.</p></div></div>
+            <button id="resetAccount" class="button danger"><i data-lucide="rotate-ccw"></i>Reset account inputs</button>
+            <button id="resetTrades" class="button danger"><i data-lucide="trash-2"></i>Delete local trade records</button>
+            <button id="resetAll" class="button danger"><i data-lucide="database-zap"></i>Reset all local data</button>
+          </article>
+        </div>
+        <p class="footer-note">Pushover is optional. Add <code>PUSHOVER_APP_TOKEN</code> and <code>PUSHOVER_USER_KEY</code> as GitHub repository secrets to receive the latest signal and dashboard link after a successful refresh.</p>
+      </section>
+
+      <footer>Research and tracking only. Not financial advice.</footer>
+    </main>
+  </div>
+</body>
+</html>

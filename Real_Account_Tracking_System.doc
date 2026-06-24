@@ -1,0 +1,23 @@
+<html>
+<head><meta charset="utf-8"><title>SPY Real Account Tracking System</title>
+<style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.4;color:#111}h1{font-size:20pt}h2{font-size:14pt;margin-top:20px}h3{font-size:12pt}table{border-collapse:collapse;width:100%;margin:8px 0 16px}th,td{border:1px solid #999;padding:6px 8px;vertical-align:top}th{background:#e8eef7}.note{background:#fff7dd;border:1px solid #d7b95e;padding:9px 11px}</style>
+</head>
+<body>
+<h1>SPY Real Account Tracking System</h1>
+<div class="note">Main version: <b>SPY SMA200 / SSO timing strategy</b>. Benchmark: <b>SPY Hold</b>. The strategy holds SSO above the upper SMA200 band and Cash below the lower band.</div>
+<h2>Purpose</h2>
+<p>The system identifies the current SSO-or-Cash model position, today’s after-close action, real brokerage holdings, performance versus SPY Hold, drawdowns, and informational spread-cycle context.</p>
+<h2>Strategy Rules</h2>
+<ul><li>Use SPY adjusted daily close and its 200-day simple moving average.</li><li>Use actual SSO adjusted close for invested model returns. Never use synthetic SSO data.</li><li>Buy or hold SSO when SPY adjusted close is greater than SMA200 × 1.01.</li><li>Sell SSO and move to Cash when SPY adjusted close is less than SMA200 × 0.99.</li><li>Between the bands, keep the prior position.</li><li>Signals are checked after the close and the resulting holding earns the next trading day’s return.</li><li>Cash earns 0% in the model.</li></ul>
+<h2>Spread Analysis</h2>
+<p>SPY/SMA200 spread equals SPY adjusted close divided by SMA200, minus one. Each SSO buy-to-sell period is a spread cycle. The high-range floor is the cycle’s 90th-percentile spread. This analysis is informational and is not an additional trading rule.</p>
+<h2>Benchmark</h2>
+<p>SPY Hold begins on the same tracking date and with the same starting value as the strategy. It remains fully invested in SPY.</p>
+<h2>Daily Process</h2>
+<ol><li>After market close, update SPY and SSO adjusted closes.</li><li>Refresh SMA200, upper and lower thresholds, and spread.</li><li>Review the model signal and next-day target.</li><li>Place a real trade only after confirming the data and target.</li><li>Record every executed trade with actual shares and fill price.</li><li>Reconcile actual SSO shares and cash against the model target.</li></ol>
+<h2>Real Account Rules</h2>
+<ul><li>Use actual brokerage shares, cash, and fill prices.</li><li>SSO market value equals shares times current SSO price; account value equals SSO market value plus cash.</li><li>Keep model and brokerage values separate.</li><li>Never silently change historical trade records; add a correction record or make an explicit documented edit.</li><li>Reconcile weekly and against brokerage statements monthly.</li><li>Do not change the strategy without creating and testing a new version.</li><li>If data or interpretation is unclear, do not trade until checked.</li></ul>
+<h2>Dashboard Metrics</h2>
+<p>Track current model position and action, SPY and SSO closes, SMA200 and bands, spread, strategy and SPY Hold values, dollar and percentage lead or lag, current and maximum drawdown, spread-cycle metrics, real-account value, allocation difference, and latest signal reason.</p>
+<p><b>Disclaimer:</b> Research and tracking only; not financial advice.</p>
+</body></html>

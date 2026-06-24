@@ -1,0 +1,41 @@
+name: Daily SPY SSO signal update
+
+on:
+  schedule:
+    - cron: "15 18 * * *"
+      timezone: "America/New_York"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+      PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run calculation tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Refresh SPY and SSO data
+        run: python scripts/update_signals.py
+
+      - name: Commit refreshed data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update daily SPY/SSO signals"
+          file_pattern: data/signals.json data/signals.csv data/calendar_cycles.csv data/spread_cycles.csv
+
+      - name: Send optional phone notification
+        if: ${{ env.PUSHOVER_APP_TOKEN != '' && env.PUSHOVER_USER_KEY != '' }}
+        run: python scripts/send_pushover_notification.py
