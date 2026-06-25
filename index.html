@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="SPY SMA200 signal dashboard for SSO/Cash positioning">
   <title>SPY/SSO Signal Desk</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=2" defer></script>
 </head>
 <body>
   <div id="loadingState" class="state-screen"><div class="spinner"></div><p>Loading SPY/SSO signal data…</p></div>
@@ -92,7 +92,10 @@
           <article class="metric"><span class="metric-label">Lower sell threshold</span><strong id="sellThreshold">—</strong><small>SMA200 × 0.99</small></article>
           <article class="metric"><span class="metric-label">SPY / SMA spread <button class="tip" title="SPY adjusted close divided by SMA200, minus one">?</button></span><strong id="spread">—</strong><small>Informational only</small></article>
           <article class="metric"><span class="metric-label">Current drawdown</span><strong id="currentDrawdown">—</strong><small>From strategy peak</small></article>
-          <article class="metric"><span class="metric-label">Maximum drawdown</span><strong id="maxDrawdown">—</strong><small>Since 2006-06-21</small></article>
+          <article class="metric"><span class="metric-label">Strategy max drawdown</span><strong id="maxDrawdown">—</strong><small>Since tracking began</small></article>
+          <article class="metric"><span class="metric-label">SPY Hold max drawdown</span><strong id="spyMaxDrawdown">—</strong><small>Buy-and-hold benchmark</small></article>
+          <article class="metric"><span class="metric-label">Tracking start date</span><strong id="trackingStartDate">—</strong><small>First actual SSO data date</small></article>
+          <article class="metric metric-wide"><span class="metric-label">Initial investment</span><strong id="initialInvestment">—</strong><small>Strategy and SPY Hold each</small></article>
         </div>
 
         <div class="section-split">
