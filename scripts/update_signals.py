@@ -11,9 +11,13 @@ from calendar import monthcalendar, SUNDAY
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-from strategy_engine import build_daily_rows, calendar_cycles, spread_cycles
+try:
+    from strategy_engine import build_daily_rows, calendar_cycles, spread_cycles
+except ModuleNotFoundError:
+    from scripts.strategy_engine import build_daily_rows, calendar_cycles, spread_cycles
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,7 +44,7 @@ def eastern_now() -> datetime:
 def fetch_yahoo(symbol: str) -> dict[str, float]:
     period2 = int(time.time()) + 86400
     request = Request(
-        YAHOO_URL.format(symbol=symbol, period2=period2),
+        YAHOO_URL.format(symbol=quote(symbol, safe=""), period2=period2),
         headers={"User-Agent": "Mozilla/5.0"},
     )
     try:
@@ -84,15 +88,31 @@ def write_csv(path: Path, records: list[dict]) -> None:
         writer.writerows(records)
 
 
+def latest_on_or_before(series: dict[str, float], target_date: str) -> tuple[str | None, float | None]:
+    dates = [date for date in series if date <= target_date]
+    if not dates:
+        return None, None
+    date = max(dates)
+    return date, series[date]
+
+
+def attach_series(daily: list[dict], series: dict[str, float], key: str) -> None:
+    for row in daily:
+        row[key] = rounded(series[row["date"]]) if row["date"] in series else None
+
+
 def main() -> int:
     try:
         spy = fetch_yahoo("SPY")
         sso = fetch_yahoo("SSO")
+        vix = fetch_yahoo("^VIX")
         rows = build_daily_rows(spy, sso)
         daily = [serialize(row) for row in rows]
+        attach_series(daily, vix, "vix_close")
         calendar = [{key: rounded(value) for key, value in item.items()} for item in calendar_cycles(rows)]
         spreads = [{key: rounded(value) for key, value in item.items()} for item in spread_cycles(rows)]
         latest = daily[-1]
+        vix_date, vix_close = latest_on_or_before(vix, latest["date"])
         lead_dollars = latest["strategy_value"] - latest["spy_benchmark_value"]
         lead_pct = latest["strategy_value"] / latest["spy_benchmark_value"] - 1
         current_cycle = spreads[-1] if spreads and spreads[-1]["status"] == "open" else None
@@ -102,7 +122,7 @@ def main() -> int:
             "dashboard_title": "SPY/SSO Signal Desk",
             "last_updated": latest["date"],
             "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "data_source": "Yahoo Finance chart API adjusted close",
+                "data_source": "Yahoo Finance chart API adjusted close",
             "strategy": {
                 "signal_source": "SPY adjusted daily close",
                 "indicator": "SPY 200-day simple moving average",
@@ -115,6 +135,8 @@ def main() -> int:
             },
             "summary": {
                 **latest,
+                "vix_close": rounded(vix_close),
+                "vix_date": vix_date,
                 "headline_status": f"Hold {latest['position']}",
                 "current_action": latest["signal"],
                 "lead_lag_dollars": rounded(lead_dollars, 2),

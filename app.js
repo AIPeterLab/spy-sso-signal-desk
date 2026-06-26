@@ -57,6 +57,56 @@ function refreshIcons() {
   if (window.lucide) window.lucide.createIcons({ attrs: { "stroke-width": 1.8 } });
 }
 
+function comparisonText(left, operator, right) {
+  return `${money(left)} ${operator} ${money(right)}`;
+}
+
+function renderDecisionPath(summary) {
+  const upperMet = Number(summary.spy_close) > Number(summary.buy_threshold);
+  const lowerMet = Number(summary.spy_close) < Number(summary.sell_threshold);
+  const insideBand = !upperMet && !lowerMet;
+  const outcomeTone = lowerMet ? "sell" : upperMet ? "buy" : "hold";
+  const steps = [
+    {
+      number: 1,
+      tone: "neutral",
+      active: true,
+      title: "Use completed SPY close",
+      copy: `${summary.date}: SPY adjusted close is ${money(summary.spy_close)} and SMA200 is ${money(summary.sma200)}.`,
+    },
+    {
+      number: 2,
+      tone: "buy",
+      active: upperMet,
+      title: "Upper buy band check",
+      copy: `${comparisonText(summary.spy_close, upperMet ? ">" : "≤", summary.buy_threshold)}. ${upperMet ? "Buy or hold SSO condition is met." : "No upper-band buy signal."}`,
+    },
+    {
+      number: 3,
+      tone: "sell",
+      active: lowerMet,
+      title: "Lower sell band check",
+      copy: `${comparisonText(summary.spy_close, lowerMet ? "<" : "≥", summary.sell_threshold)}. ${lowerMet ? "Sell SSO and move to Cash condition is met." : "No lower-band sell signal."}`,
+    },
+    {
+      number: 4,
+      tone: outcomeTone,
+      active: true,
+      title: insideBand ? "Inside the band: maintain prior position" : "Apply next-day model position",
+      copy: `${summary.current_action}; model position is ${summary.position}. Signals are calculated after the close and apply to the next trading day.`,
+    },
+  ];
+
+  const container = $("decisionPath");
+  if (!container) return;
+  container.innerHTML = steps.map((step) => `
+    <div class="path-step ${step.active ? "active" : ""} tone-${step.tone}">
+      <span class="step-number">${step.number}</span>
+      <div><p class="path-title">${escapeHtml(step.title)}</p><p class="path-copy">${escapeHtml(step.copy)}</p></div>
+    </div>
+  `).join("");
+}
+
 function showView(name) {
   const target = VIEW_META[name] ? name : "dashboard";
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${target}`));
@@ -101,6 +151,8 @@ function renderSummary() {
 
   setText("spyClose", money(summary.spy_close));
   setText("ssoClose", money(summary.sso_close));
+  setText("vixClose", number(summary.vix_close));
+  setText("vixDate", summary.vix_date ? `VIX close · ${summary.vix_date}` : "Market context only");
   setText("sma200", money(summary.sma200));
   setText("buyThreshold", money(summary.buy_threshold));
   setText("sellThreshold", money(summary.sell_threshold));
@@ -129,6 +181,7 @@ function renderSummary() {
   setText("settingsSource", state.data.data_source);
   setText("settingsDate", state.data.last_updated);
   setText("settingsGenerated", new Date(state.data.generated_at_utc).toLocaleString());
+  renderDecisionPath(summary);
 }
 
 function dailySignalClass(signal) {

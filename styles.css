@@ -95,6 +95,7 @@ nav { display: grid; gap: 4px; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--border); gap: 1px; }
 .metric { padding: 18px; min-height: 112px; box-shadow: none; border: 0; display: flex; flex-direction: column; justify-content: center; }
 .metric-wide { grid-column: span 2; }
+.metric-full { grid-column: 1 / -1; }
 .metric strong { display: block; margin: 8px 0 3px; font-size: clamp(21px, 2.1vw, 29px); letter-spacing: -.025em; }
 .metric small { color: var(--muted); }
 .tip { border: 1px solid var(--border); border-radius: 50%; background: transparent; color: var(--muted); width: 17px; height: 17px; padding: 0; line-height: 15px; cursor: help; }
@@ -117,6 +118,18 @@ nav { display: grid; gap: 4px; }
 .status-list dt { color: var(--muted); }
 .status-list dd { margin: 0; text-align: right; font-weight: 650; }
 .status-list.padded { padding: 7px 0; }
+
+.decision-surface { margin-top: 16px; }
+.path { display: grid; }
+.path-step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 13px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.path-step:last-child { border-bottom: 0; }
+.step-number { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); background: var(--surface-2); font-size: 12px; font-weight: 850; }
+.path-step.active.tone-buy .step-number { color: white; background: var(--green); }
+.path-step.active.tone-sell .step-number { color: white; background: var(--red); }
+.path-step.active.tone-hold .step-number { color: white; background: var(--amber); }
+.path-step.active.tone-neutral .step-number { color: white; background: var(--blue); }
+.path-title { margin: 0; font-size: 14px; font-weight: 780; }
+.path-copy { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
 
 .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
 .toolbar.compact { margin: 14px 0; color: var(--muted); }
@@ -220,6 +233,7 @@ footer { max-width: 1440px; margin: 28px auto 0; color: var(--muted); font-size:
 @media (max-width: 520px) {
   .metric-grid { grid-template-columns: 1fr; }
   .metric-wide { grid-column: auto; }
+  .metric-full { grid-column: auto; }
   .lead-comparison > div { padding: 17px; }
   .position-panel { min-height: 235px; }
   .field-grid, .trade-form, .account-summary { grid-template-columns: 1fr; }

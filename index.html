@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="SPY SMA200 signal dashboard for SSO/Cash positioning">
   <title>SPY/SSO Signal Desk</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
-  <script src="app.js?v=3" defer></script>
+  <script src="app.js?v=4" defer></script>
 </head>
 <body>
   <div id="loadingState" class="state-screen"><div class="spinner"></div><p>Loading SPY/SSO signal data…</p></div>
@@ -87,6 +87,7 @@
         <div class="metric-grid" id="dashboardMetrics">
           <article class="metric"><span class="metric-label">SPY close</span><strong id="spyClose">—</strong><small>Adjusted close</small></article>
           <article class="metric"><span class="metric-label">SSO close</span><strong id="ssoClose">—</strong><small>Actual adjusted close</small></article>
+          <article class="metric"><span class="metric-label">VIX index</span><strong id="vixClose">—</strong><small id="vixDate">Market context only</small></article>
           <article class="metric"><span class="metric-label">SPY SMA200 <button class="tip" title="Simple average of the latest 200 SPY adjusted closes">?</button></span><strong id="sma200">—</strong><small>Signal indicator</small></article>
           <article class="metric"><span class="metric-label">Upper buy threshold</span><strong id="buyThreshold">—</strong><small>SMA200 × 1.01</small></article>
           <article class="metric"><span class="metric-label">Lower sell threshold</span><strong id="sellThreshold">—</strong><small>SMA200 × 0.99</small></article>
@@ -96,8 +97,16 @@
           <article class="metric"><span class="metric-label">Strategy max drawdown</span><strong id="maxDrawdown">—</strong><small>Since tracking began</small></article>
           <article class="metric"><span class="metric-label">SPY Hold max drawdown</span><strong id="spyMaxDrawdown">—</strong><small>Buy-and-hold benchmark</small></article>
           <article class="metric"><span class="metric-label">Tracking start date</span><strong id="trackingStartDate">—</strong><small>First actual SSO data date</small></article>
-          <article class="metric"><span class="metric-label">Initial investment</span><strong id="initialInvestment">—</strong><small>Strategy and SPY Hold each</small></article>
+          <article class="metric metric-full"><span class="metric-label">Initial investment</span><strong id="initialInvestment">—</strong><small>Strategy and SPY Hold each</small></article>
         </div>
+
+        <article class="surface decision-surface">
+          <div class="section-heading">
+            <div><h2>Decision Path</h2><p>How the latest close turns into the next trading-day position.</p></div>
+            <span class="badge info">VIX is context only</span>
+          </div>
+          <div class="path" id="decisionPath"></div>
+        </article>
 
         <div class="section-split">
           <article class="surface">

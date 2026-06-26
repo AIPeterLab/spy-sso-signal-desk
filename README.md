@@ -17,6 +17,7 @@ Live dashboard: `https://aipeterlab.github.io/spy-sso-signal-desk/`
 - Signals are calculated after the close and affect the next trading day.
 - SSO returns use actual Yahoo Finance adjusted-close data. Synthetic SSO history is not used.
 - SPY/SMA200 spread-cycle analysis is informational only.
+- VIX is shown as market context only. It is not an additional trading rule.
 
 ## Dashboard Views
 
@@ -40,14 +41,14 @@ python scripts/update_signals.py
 python -m unittest discover -s tests -v
 ```
 
-The updater uses the Yahoo Finance chart API with adjusted-close history for SPY and SSO.
+The updater uses the Yahoo Finance chart API with adjusted-close history for SPY and SSO, plus VIX index closes for dashboard context.
 
 ## Daily Automation
 
 `.github/workflows/daily-update.yml` runs at 6:15 PM in the `America/New_York` timezone. It:
 
 1. Runs the unit tests.
-2. Downloads fresh SPY and SSO adjusted-close data.
+2. Downloads fresh SPY and SSO adjusted-close data plus VIX context data.
 3. Rebuilds JSON and CSV outputs.
 4. Automatically commits changed data.
 5. Sends an optional Pushover phone notification.
