@@ -106,12 +106,14 @@ function renderSummary() {
   setText("sellThreshold", money(summary.sell_threshold));
   setText("spread", pct(summary.spread));
   setText("currentDrawdown", pct(summary.strategy_drawdown));
+  setText("currentSpyDrawdown", pct(summary.spy_drawdown));
   setText("maxDrawdown", pct(summary.max_strategy_drawdown));
   setText("spyMaxDrawdown", pct(summary.max_spy_drawdown));
   setText("trackingStartDate", state.daily[0]?.date || "—");
   setText("initialInvestment", money(state.daily[0]?.strategy_value));
   tone($("spread"), summary.spread);
   tone($("currentDrawdown"), summary.strategy_drawdown);
+  tone($("currentSpyDrawdown"), summary.spy_drawdown);
   tone($("maxDrawdown"), summary.max_strategy_drawdown);
   tone($("spyMaxDrawdown"), summary.max_spy_drawdown);
 
