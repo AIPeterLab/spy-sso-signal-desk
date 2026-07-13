@@ -1,8 +1,10 @@
 # SSO Signal Desk
 
-Public GitHub Pages dashboard for the SPY SMA200 signal / SSO-or-Cash strategy.
+Public dashboard for the SPY SMA200 signal / SSO-or-Cash strategy.
 
 Live dashboard: `https://aipeterlab.github.io/spy-sso-signal-desk/`
+
+Cloudflare custom domain target: `https://sso.aipeterlab.com/`
 
 ## Strategy
 
@@ -66,7 +68,23 @@ If both secrets are present, the workflow sends the latest market date, model po
 
 ## Deployment
 
-The site is static and is deployed with GitHub Pages from the default branch and repository root. No build step is required.
+The site is static and can be deployed from the default branch and repository root. No build step is required.
+
+## Cloudflare Pages
+
+This repo is ready to deploy as a no-framework Cloudflare Pages static site while keeping the dashboard method and GitHub Actions refresh workflow unchanged.
+
+Use these Pages settings:
+
+- Project name: `sso-signal-desk`
+- Production branch: `main`
+- Framework preset: `None`
+- Build command: `exit 0`
+- Build output directory: `/`
+- Root directory: leave blank / repository root
+- Environment variables: none required
+
+After the first Pages deployment, attach the custom domain `sso.aipeterlab.com` in the Cloudflare Pages project. The existing GitHub Actions workflow should continue to own the daily data refresh and push updated `data/signals.json`, `data/signals.csv`, `data/calendar_cycles.csv`, and `data/spread_cycles.csv` to `main`; Cloudflare Pages will redeploy from GitHub after those pushes.
 
 ## Important Distinction
 
