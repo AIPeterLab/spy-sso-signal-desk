@@ -3,274 +3,486 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="SPY SMA200 signal dashboard for SSO/Cash positioning">
+  <meta name="description" content="Daily SPY SMA200 SSO to Cash strategy dashboard">
   <title>SPY/SSO Signal Desk</title>
-  <link rel="stylesheet" href="styles.css?v=4">
-  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
-  <script src="app.js?v=4" defer></script>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --surface-2: #eef2f5;
+      --text: #17202a;
+      --muted: #667085;
+      --border: #d9e0e7;
+      --blue: #2563eb;
+      --green: #16805c;
+      --amber: #a86108;
+      --red: #b83232;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 26px 0 42px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .brand { display: flex; gap: 12px; align-items: center; min-width: 0; }
+
+    .mark {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 7px;
+      background: #182230;
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    h1 { margin: 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.08; }
+    .subtitle { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    .updated { color: var(--muted); font-size: 13px; text-align: right; line-height: 1.45; }
+    .home-link {
+      display: inline-flex;
+      width: fit-content;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 720;
+    }
+
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .lead-grid {
+      display: grid;
+      grid-template-columns: minmax(310px, 0.9fr) minmax(0, 1.55fr);
+      gap: 18px;
+    }
+
+    .position-panel {
+      min-height: 350px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .position-title {
+      margin: 8px 0 12px;
+      font-size: clamp(42px, 6vw, 62px);
+      line-height: 0.98;
+      font-weight: 820;
+      color: var(--green);
+    }
+
+    .position-panel.cash .position-title { color: var(--red); }
+    .position-panel.spy .position-title { color: var(--blue); }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 690;
+    }
+
+    .explanation { margin: 0; color: #344054; font-size: 15px; line-height: 1.5; }
+    .manual-link {
+      width: fit-content;
+      margin-top: auto;
+      padding: 9px 13px;
+      border: 1px solid var(--text);
+      border-radius: 7px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 720;
+    }
+
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .metric {
+      min-height: 116px;
+      padding: 18px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .signal-grid .metric:nth-child(4n) { border-right: 0; }
+    .signal-grid .metric:nth-child(n + 5) { border-bottom: 0; }
+    .signal-grid .metric:last-child { border-right: 0; }
+    .value { margin: 0; font-size: clamp(23px, 3vw, 32px); line-height: 1.08; font-weight: 780; }
+    .note { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+    .signal-value {
+      display: inline-grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      border-radius: 7px;
+      background: #e7f6ef;
+      color: var(--green);
+      font-size: 30px;
+      font-weight: 850;
+    }
+
+    .signal-value.zero { background: #fff0f0; color: var(--red); }
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .neutral { color: var(--muted); }
+
+    .performance-panel { margin-top: 18px; }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+    }
+    h2 { margin: 0; font-size: 17px; line-height: 1.25; }
+
+    .performance-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-top: 1px solid var(--border);
+    }
+
+    .performance-grid .metric:nth-child(3n) { border-right: 0; }
+    .performance-grid .metric:nth-child(n + 7) { border-bottom: 0; }
+
+    .lower-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.78fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td {
+      padding: 11px 16px;
+      border-top: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    th {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td.reason { white-space: normal; min-width: 220px; color: #344054; }
+
+    .path { padding: 0 18px 18px; }
+    .path-step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 11px;
+      padding: 14px 0;
+      border-top: 1px solid var(--border);
+    }
+    .step-number {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--surface-2);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .path-title { margin: 0; font-size: 14px; font-weight: 740; }
+    .path-copy { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.42; }
+
+    .footer { margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    @media (max-width: 880px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .updated { text-align: left; }
+      .lead-grid, .lower-grid { grid-template-columns: 1fr; }
+      .signal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .signal-grid .metric:nth-child(n) { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .signal-grid .metric:nth-child(2n) { border-right: 0; }
+      .signal-grid .metric:nth-child(n + 7) { border-bottom: 0; }
+      .performance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .performance-grid .metric:nth-child(n) { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .performance-grid .metric:nth-child(2n) { border-right: 0; }
+      .performance-grid .metric:nth-child(n + 9) { border-bottom: 0; }
+      table { display: block; overflow-x: auto; }
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: calc(100% - 20px); padding-top: 17px; }
+      .signal-grid, .performance-grid { grid-template-columns: 1fr; }
+      .metric, .metric:nth-child(n) { border-right: 0; border-bottom: 1px solid var(--border); }
+      .signal-grid .metric:last-child, .performance-grid .metric:last-child { border-bottom: 0; }
+      th, td { padding: 10px 12px; }
+      .section-head { align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
-  <div id="loadingState" class="state-screen"><div class="spinner"></div><p>Loading SPY/SSO signal data…</p></div>
-  <div id="errorState" class="state-screen hidden">
-    <i data-lucide="triangle-alert"></i>
-    <h2>Signal data could not be loaded</h2>
-    <p id="errorMessage">Check the data file or import a replacement.</p>
-    <button class="button primary" data-open-view="settings"><i data-lucide="upload"></i>Open import tools</button>
-  </div>
-
-  <div class="app-shell">
-    <aside class="sidebar">
-      <a class="brand" href="#dashboard" aria-label="SPY SSO Signal Desk home">
-        <span class="brand-mark">S2</span>
-        <span><strong>SSO Signal Desk</strong><small>SPY SMA200 model</small></span>
-      </a>
-      <nav id="primaryNav" aria-label="Primary navigation">
-        <button class="nav-link active" data-view="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
-        <button class="nav-link" data-view="daily"><i data-lucide="table-2"></i><span>Daily Data</span></button>
-        <button class="nav-link" data-view="account"><i data-lucide="wallet-cards"></i><span>Real Account</span></button>
-        <button class="nav-link" data-view="trades"><i data-lucide="book-open-check"></i><span>Trade Log</span></button>
-        <button class="nav-link" data-view="calendar"><i data-lucide="calendar-range"></i><span>Calendar Cycles</span></button>
-        <button class="nav-link" data-view="spreads"><i data-lucide="activity"></i><span>Spread Cycles</span></button>
-        <button class="nav-link" data-view="rules"><i data-lucide="scroll-text"></i><span>Rules</span></button>
-        <button class="nav-link" data-view="settings"><i data-lucide="settings-2"></i><span>Settings</span></button>
-      </nav>
-      <div class="sidebar-foot">
-        <span class="status-dot" id="sidebarFreshDot"></span>
-        <span id="sidebarFreshText">Checking freshness</span>
-      </div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <button id="mobileMenu" class="icon-button mobile-only" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+  <main class="shell">
+    <header>
+      <div class="brand">
+        <div class="mark">SMA</div>
         <div>
-          <h1 id="viewTitle">SPY/SSO Signal Desk</h1>
-          <p id="viewSubtitle">Operational close-to-next-day tracking for the SPY SMA200 / SSO strategy.</p>
+          <h1>SPY/SSO Signal Desk</h1>
+          <p class="subtitle">SPY SMA200 SSO → Cash strategy</p>
         </div>
-        <div class="topbar-actions">
-          <span id="freshnessBadge" class="badge neutral">Loading</span>
-          <button id="themeToggle" class="icon-button" aria-label="Toggle theme"><i data-lucide="moon"></i></button>
+      </div>
+      <div class="updated">
+        <div id="updated">Loading latest completed close...</div>
+        <a class="home-link" href="https://aipeterlab.com/">AIPeterLab home</a>
+      </div>
+    </header>
+
+    <section class="lead-grid">
+      <article class="panel position-panel cash" id="positionPanel">
+        <p class="label">Current Position</p>
+        <div class="position-title" id="headlineStatus">Loading</div>
+        <div class="chips">
+          <span class="chip" id="requiredAction">Required action: --</span>
+          <span class="chip" id="lastTrade">Last transition: --</span>
         </div>
-      </header>
+        <p class="explanation" id="ruleExplanation">Fetching signal data...</p>
+        <a class="manual-link" href="Real_Account_Tracking_System.doc">Open operating manual</a>
+      </article>
 
-      <section id="view-dashboard" class="view active">
-        <div class="dashboard-lead">
-          <article id="positionPanel" class="position-panel">
-            <div class="eyeline">Current model position</div>
-            <div class="position-line">
-              <span id="currentPosition">—</span>
-              <span id="currentAction" class="action-badge">—</span>
-            </div>
-            <p id="latestReason">Loading the latest completed close.</p>
-            <div class="position-meta">
-              <span><i data-lucide="calendar-check"></i><b id="latestDate">—</b> latest close</span>
-              <span><i data-lucide="clock-3"></i>Applies next trading day</span>
-            </div>
-          </article>
-          <article class="lead-comparison">
-            <div>
-              <span class="metric-label">Strategy value</span>
-              <strong id="strategyValue">—</strong>
-            </div>
-            <div>
-              <span class="metric-label">SPY Hold</span>
-              <strong id="benchmarkValue">—</strong>
-            </div>
-            <div>
-              <span class="metric-label">Lead / lag</span>
-              <strong id="leadLag">—</strong>
-              <small id="leadLagPct">—</small>
-            </div>
-          </article>
+      <article class="panel signal-grid" aria-label="Current SPY SMA200 and market metrics">
+        <div class="metric">
+          <p class="label">SMA200 Band Signal</p>
+          <div class="signal-value zero" id="bandSignal">--</div>
+          <p class="note">1 = SSO mode · 0 = Cash mode</p>
         </div>
-
-        <div class="metric-grid" id="dashboardMetrics">
-          <article class="metric"><span class="metric-label">SPY close</span><strong id="spyClose">—</strong><small>Adjusted close</small></article>
-          <article class="metric"><span class="metric-label">SSO close</span><strong id="ssoClose">—</strong><small>Actual adjusted close</small></article>
-          <article class="metric"><span class="metric-label">VIX index</span><strong id="vixClose">—</strong><small id="vixDate">Market context only</small></article>
-          <article class="metric"><span class="metric-label">SPY SMA200 <button class="tip" title="Simple average of the latest 200 SPY adjusted closes">?</button></span><strong id="sma200">—</strong><small>Signal indicator</small></article>
-          <article class="metric"><span class="metric-label">Upper buy threshold</span><strong id="buyThreshold">—</strong><small>SMA200 × 1.01</small></article>
-          <article class="metric"><span class="metric-label">Lower sell threshold</span><strong id="sellThreshold">—</strong><small>SMA200 × 0.99</small></article>
-          <article class="metric"><span class="metric-label">SPY / SMA spread <button class="tip" title="SPY adjusted close divided by SMA200, minus one">?</button></span><strong id="spread">—</strong><small>Informational only</small></article>
-          <article class="metric"><span class="metric-label">Current drawdown</span><strong id="currentDrawdown">—</strong><small>From strategy peak</small></article>
-          <article class="metric"><span class="metric-label">Current SPY benchmark drawdown</span><strong id="currentSpyDrawdown">—</strong><small>From SPY Hold peak</small></article>
-          <article class="metric"><span class="metric-label">Strategy max drawdown</span><strong id="maxDrawdown">—</strong><small>Since tracking began</small></article>
-          <article class="metric"><span class="metric-label">SPY Hold max drawdown</span><strong id="spyMaxDrawdown">—</strong><small>Buy-and-hold benchmark</small></article>
-          <article class="metric"><span class="metric-label">Tracking start date</span><strong id="trackingStartDate">—</strong><small>First actual SSO data date</small></article>
-          <article class="metric metric-full"><span class="metric-label">Initial investment</span><strong id="initialInvestment">—</strong><small>Strategy and SPY Hold each</small></article>
+        <div class="metric">
+          <p class="label">SPY Close</p>
+          <p class="value" id="spyClose">--</p>
+          <p class="note" id="smaDistance">SMA200 distance: --</p>
         </div>
-
-        <article class="surface decision-surface">
-          <div class="section-heading">
-            <div><h2>Decision Path</h2><p>How the latest close turns into the next trading-day position.</p></div>
-            <span class="badge info">VIX is context only</span>
-          </div>
-          <div class="path" id="decisionPath"></div>
-        </article>
-
-        <div class="section-split">
-          <article class="surface">
-            <div class="section-heading">
-              <div><h2>Current spread cycle</h2><p>Context for the open SSO buy-to-sell cycle.</p></div>
-              <span class="badge info">Informational only</span>
-            </div>
-            <div class="cycle-strip">
-              <div><span>Cycle</span><strong id="cycleNumber">—</strong></div>
-              <div><span>High-range floor</span><strong id="cycleFloor">—</strong></div>
-              <div><span>Maximum spread</span><strong id="cycleMax">—</strong><small id="cycleMaxDate">—</small></div>
-              <div><span>Latest in high range?</span><strong id="inHighRange">—</strong></div>
-            </div>
-          </article>
-          <article class="surface">
-            <div class="section-heading"><div><h2>Data status</h2><p>What the desk is currently using.</p></div></div>
-            <dl class="status-list">
-              <div><dt>Completed close</dt><dd id="statusCloseDate">—</dd></div>
-              <div><dt>Generated</dt><dd id="generatedAt">—</dd></div>
-              <div><dt>Source</dt><dd id="dataSource">—</dd></div>
-              <div><dt>Rows</dt><dd id="rowCount">—</dd></div>
-            </dl>
-          </article>
+        <div class="metric">
+          <p class="label">VIX Index</p>
+          <p class="value" id="vixClose">--</p>
+          <p class="note">S&P 500 volatility context only</p>
         </div>
-      </section>
-
-      <section id="view-daily" class="view">
-        <div class="toolbar">
-          <label class="search"><i data-lucide="search"></i><input id="dailySearch" type="search" placeholder="Search date, signal, position, or reason"></label>
-          <div class="toolbar-actions">
-            <label class="button"><i data-lucide="upload"></i>Import CSV<input id="dailyImport" type="file" accept=".csv,text/csv" hidden></label>
-            <button id="exportDaily" class="button"><i data-lucide="download"></i>Export CSV</button>
-          </div>
+        <div class="metric">
+          <p class="label">SPY SMA200</p>
+          <p class="value" id="sma200">--</p>
+          <p class="note" id="smaCondition">Long-term signal layer</p>
         </div>
-        <div id="importError" class="inline-alert hidden"></div>
-        <div class="table-shell">
-          <table id="dailyTable">
-            <thead><tr>
-              <th data-sort="date">Date</th><th data-sort="spy_close">SPY</th><th data-sort="sso_close">SSO</th>
-              <th data-sort="sma200">SMA200</th><th data-sort="spread">Spread</th><th>Buy / sell bands</th>
-              <th data-sort="signal">Signal</th><th data-sort="position">Position</th><th>Strategy return</th>
-              <th>Strategy value</th><th>SPY Hold</th><th>Strategy DD</th><th>SPY DD</th>
-            </tr></thead>
-            <tbody id="dailyBody"></tbody>
-          </table>
-          <div id="dailyEmpty" class="empty-state hidden"><i data-lucide="inbox"></i><p>No matching daily rows.</p></div>
+        <div class="metric">
+          <p class="label">SSO Close</p>
+          <p class="value" id="ssoClose">--</p>
+          <p class="note" id="bandStatus">Band status: --</p>
         </div>
-        <div class="pagination"><button id="dailyPrev" class="button">Previous</button><span id="dailyPage">—</span><button id="dailyNext" class="button">Next</button></div>
-      </section>
-
-      <section id="view-account" class="view">
-        <div class="form-grid">
-          <article class="surface">
-            <div class="section-heading"><div><h2>Live account inputs</h2><p>Saved only in this browser. Model history is never overwritten.</p></div></div>
-            <form id="accountForm" class="field-grid">
-              <label>Tracking start date<input name="startDate" type="date"></label>
-              <label>Starting account value<input name="startingValue" type="number" min="0" step="0.01"></label>
-              <label>Actual SSO shares<input name="shares" type="number" min="0" step="0.0001"></label>
-              <label>Cash balance<input name="cash" type="number" min="0" step="0.01"></label>
-              <label>Latest actual fill price<input name="fillPrice" type="number" min="0" step="0.01"></label>
-              <label>Account name<input name="accountName" type="text" placeholder="Optional"></label>
-              <button class="button primary" type="submit"><i data-lucide="save"></i>Save account settings</button>
-            </form>
-          </article>
-          <article class="surface">
-            <div class="section-heading"><div><h2>Reconciliation</h2><p>Actual brokerage values versus the model target.</p></div></div>
-            <div class="account-summary">
-              <div><span>SSO market value</span><strong id="actualSsoValue">—</strong></div>
-              <div><span>Total account value</span><strong id="actualTotalValue">—</strong></div>
-              <div><span>Model target</span><strong id="modelTarget">—</strong></div>
-              <div><span>Actual allocation</span><strong id="actualAllocation">—</strong></div>
-              <div class="wide"><span>Reconciliation status</span><strong id="reconciliation">Add account values to begin.</strong></div>
-            </div>
-          </article>
+        <div class="metric">
+          <p class="label">Buy Threshold</p>
+          <p class="value" id="buyThreshold">--</p>
+          <p class="note">SPY close must be strictly above</p>
         </div>
-        <p class="callout"><i data-lucide="shield-check"></i>Actual shares, cash, and fill prices are brokerage records. Model values remain separate and use adjusted closes.</p>
-      </section>
-
-      <section id="view-trades" class="view">
-        <article class="surface">
-          <div class="section-heading"><div><h2 id="tradeFormTitle">Add trade record</h2><p>Edits require an explicit save. Existing rows are never changed automatically.</p></div></div>
-          <form id="tradeForm" class="trade-form">
-            <input type="hidden" name="id">
-            <label>Date<input name="date" type="date" required></label>
-            <label>Action<select name="action"><option>Buy</option><option>Sell</option><option>Correction</option></select></label>
-            <label>Symbol<input name="symbol" value="SSO" required></label>
-            <label>Shares<input name="shares" type="number" step="0.0001" required></label>
-            <label>Fill price<input name="fillPrice" type="number" step="0.01" required></label>
-            <label>Reason<input name="reason" required></label>
-            <label>Account value after trade<input name="accountValue" type="number" step="0.01"></label>
-            <label class="wide">Notes<input name="notes"></label>
-            <div class="form-actions wide"><button class="button primary" type="submit"><i data-lucide="plus"></i><span id="tradeSubmitText">Add record</span></button><button id="cancelTradeEdit" class="button hidden" type="button">Cancel edit</button></div>
-          </form>
-        </article>
-        <div class="toolbar compact"><span id="tradeCount">0 records</span><button id="exportTrades" class="button"><i data-lucide="download"></i>Export trades</button></div>
-        <div class="table-shell"><table><thead><tr><th>Date</th><th>Action</th><th>Symbol</th><th>Shares</th><th>Fill price</th><th>Dollar amount</th><th>Reason</th><th>Notes</th><th>Account value</th><th></th></tr></thead><tbody id="tradeBody"></tbody></table><div id="tradeEmpty" class="empty-state"><i data-lucide="book-dashed"></i><p>No real trades recorded in this browser.</p></div></div>
-      </section>
-
-      <section id="view-calendar" class="view">
-        <div class="toolbar compact">
-          <div class="segmented" id="cycleFilter"><button class="active" data-years="1">1 year</button><button data-years="2">2 years</button><button data-years="3">3 years</button><button data-years="5">5 years</button><button data-years="10">10 years</button></div>
-          <button id="exportCalendar" class="button"><i data-lucide="download"></i>Export</button>
+        <div class="metric">
+          <p class="label">Sell Threshold</p>
+          <p class="value" id="sellThreshold">--</p>
+          <p class="note">SPY close must be strictly below</p>
         </div>
-        <p class="view-note">Each full calendar cycle resets both the strategy and SPY Hold to $1,000 at the cycle start.</p>
-        <div class="table-shell"><table><thead><tr><th>Period</th><th>Dates</th><th>Strategy final</th><th>SPY final</th><th>Strategy return</th><th>SPY return</th><th>Strategy max DD</th><th>SPY max DD</th><th>Beat SPY?</th><th>Positive?</th></tr></thead><tbody id="calendarBody"></tbody></table></div>
-      </section>
+      </article>
+    </section>
 
-      <section id="view-spreads" class="view">
-        <p class="callout warning"><i data-lucide="info"></i>Spread-cycle analysis is informational only. It does not add an exit, profit-taking, or allocation rule.</p>
-        <div class="toolbar compact"><span id="spreadCycleCount">—</span><button id="exportSpreads" class="button"><i data-lucide="download"></i>Export</button></div>
-        <div class="table-shell"><table><thead><tr><th>Cycle</th><th>Status</th><th>Buy date</th><th>Sell date</th><th>Trading days</th><th>Minimum spread</th><th>P90 high-range floor</th><th>Maximum spread</th><th>Maximum date</th><th>High-range days</th></tr></thead><tbody id="spreadBody"></tbody></table></div>
-      </section>
+    <section class="panel performance-panel" aria-labelledby="performanceHeading">
+      <div class="section-head">
+        <h2 id="performanceHeading">Performance Since Tracking Began</h2>
+        <span class="chip">Adjusted close · $1,000 start</span>
+      </div>
+      <div class="performance-grid">
+        <div class="metric"><p class="label">Starting Date</p><p class="value" id="startDate">--</p><p class="note">First actual SSO date</p></div>
+        <div class="metric"><p class="label">Strategy Value</p><p class="value" id="strategyValue">--</p><p class="note">SPY SMA200 SSO/Cash strategy</p></div>
+        <div class="metric"><p class="label">SPY Hold Value</p><p class="value" id="benchmarkValue">--</p><p class="note">Same start date and dollars</p></div>
+        <div class="metric"><p class="label">Strategy vs SPY</p><p class="value" id="leadLag">--</p><p class="note" id="leadLagPct">--</p></div>
+        <div class="metric"><p class="label">Current Drawdown</p><p class="value" id="currentDrawdown">--</p><p class="note">Strategy below prior peak</p></div>
+        <div class="metric"><p class="label">Current SPY Benchmark Drawdown</p><p class="value" id="currentBenchmarkDrawdown">--</p><p class="note">SPY hold below prior peak</p></div>
+        <div class="metric"><p class="label">Strategy Max Drawdown</p><p class="value" id="strategyMaxDrawdown">--</p><p class="note">Full live history</p></div>
+        <div class="metric"><p class="label">SPY Max Drawdown</p><p class="value" id="benchmarkMaxDrawdown">--</p><p class="note">Full benchmark history</p></div>
+        <div class="metric"><p class="label">SPY SMA200 Spread</p><p class="value" id="spreadValue">--</p><p class="note">Close versus SMA200</p></div>
+      </div>
+    </section>
 
-      <section id="view-rules" class="view">
-        <article class="rules-layout">
-          <div>
-            <h2>SPY SMA200 / SSO timing strategy</h2>
-            <p>The model uses SPY adjusted close to decide whether the next trading day should be invested in SSO or held in Cash.</p>
-          </div>
-          <dl class="rule-facts">
-            <div><dt>Signal source</dt><dd>SPY adjusted daily close</dd></div>
-            <div><dt>Indicator</dt><dd>SPY 200-day simple moving average</dd></div>
-            <div><dt>Invested asset</dt><dd>SSO</dd></div>
-            <div><dt>Defensive position</dt><dd>Cash</dd></div>
-            <div><dt>Benchmark</dt><dd>SPY Hold</dd></div>
-            <div><dt>Trade timing</dt><dd>Close signal → next trading day</dd></div>
-          </dl>
-          <div class="rule-section"><h3>Buy or hold SSO</h3><p>When SPY adjusted close is greater than <b>SMA200 × 1.01</b>, the model is in SSO. A new Cash-to-SSO change is recorded as a buy signal after that close.</p></div>
-          <div class="rule-section"><h3>Sell SSO and hold Cash</h3><p>When SPY adjusted close is less than <b>SMA200 × 0.99</b>, the model is in Cash. A new SSO-to-Cash change is recorded as a sell signal after that close.</p></div>
-          <div class="rule-section"><h3>Between the bands</h3><p>Maintain the prior position. If the model already holds SSO, it stays in SSO. If it already holds Cash, it stays in Cash.</p></div>
-          <div class="rule-section"><h3>Return timing</h3><p>The close creates the signal, and the resulting holding earns the following trading day’s return. SSO uses actual adjusted-close returns; Cash earns 0% in the model.</p></div>
-          <div class="rule-section"><h3>Real-account operation</h3><ul><li>Use actual shares, cash, and fill prices for brokerage tracking.</li><li>Do not replace actual fills with theoretical closes.</li><li>Keep real-account values separate from model values.</li><li>Record every trade; use correction rows instead of silently rewriting history.</li><li>Reconcile shares and cash weekly and against the brokerage statement monthly.</li></ul></div>
-          <div class="rule-section"><h3>Spread analysis</h3><p>SPY/SMA200 spread, cycle maximums, and the 90th-percentile high range are context only. They are not trading rules unless a separate strategy is tested and approved.</p></div>
-          <div class="rule-section"><h3>Data rules</h3><p>Use actual SPY and SSO adjusted-close history. Do not synthesize SSO. If the data or signal interpretation is unclear, do not trade until it is checked.</p></div>
-        </article>
-      </section>
-
-      <section id="view-settings" class="view">
-        <div class="form-grid">
-          <article class="surface">
-            <div class="section-heading"><div><h2>Data and update settings</h2><p>The published model file is replaced by the daily updater or by a deliberate import.</p></div></div>
-            <dl class="status-list padded">
-              <div><dt>Source</dt><dd id="settingsSource">—</dd></div>
-              <div><dt>Market date</dt><dd id="settingsDate">—</dd></div>
-              <div><dt>Generated time</dt><dd id="settingsGenerated">—</dd></div>
-              <div><dt>Daily schedule</dt><dd>6:15 PM America/New_York</dd></div>
-            </dl>
-            <div class="settings-actions">
-              <label class="button primary"><i data-lucide="upload"></i>Import JSON<input id="jsonImport" type="file" accept=".json,application/json" hidden></label>
-              <button id="exportJson" class="button"><i data-lucide="download"></i>Export JSON</button>
-            </div>
-          </article>
-          <article class="surface danger-zone">
-            <div class="section-heading"><div><h2>Browser-local controls</h2><p>These affect only this browser’s account and trade records.</p></div></div>
-            <button id="resetAccount" class="button danger"><i data-lucide="rotate-ccw"></i>Reset account inputs</button>
-            <button id="resetTrades" class="button danger"><i data-lucide="trash-2"></i>Delete local trade records</button>
-            <button id="resetAll" class="button danger"><i data-lucide="database-zap"></i>Reset all local data</button>
-          </article>
+    <section class="lower-grid">
+      <article class="panel">
+        <div class="section-head">
+          <h2>Recent Transition History</h2>
+          <span class="chip" id="transitionCount">-- transitions</span>
         </div>
-        <p class="footer-note">Pushover is optional. Add <code>PUSHOVER_APP_TOKEN</code> and <code>PUSHOVER_USER_KEY</code> as GitHub repository secrets to receive the latest signal and dashboard link after a successful refresh.</p>
-      </section>
+        <table>
+          <thead><tr><th>Date</th><th>Signal</th><th>Position</th><th>Action</th><th>Strategy</th><th>Reason</th></tr></thead>
+          <tbody id="transitionBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+        </table>
+      </article>
 
-      <footer>Research and tracking only. Not financial advice.</footer>
-    </main>
-  </div>
+      <aside class="panel">
+        <div class="section-head"><h2>Decision Path</h2></div>
+        <div class="path">
+          <div class="path-step"><span class="step-number">1</span><div><p class="path-title">Use completed SPY close</p><p class="path-copy">Signals are calculated after the completed close and affect the next trading day.</p></div></div>
+          <div class="path-step"><span class="step-number">2</span><div><p class="path-title">Above upper band → SSO</p><p class="path-copy">Buy or hold SSO when SPY closes strictly above SMA200 × 1.01.</p></div></div>
+          <div class="path-step"><span class="step-number">3</span><div><p class="path-title">Below lower band → Cash</p><p class="path-copy">Sell SSO and move to Cash when SPY closes strictly below SMA200 × 0.99.</p></div></div>
+          <div class="path-step"><span class="step-number">4</span><div><p class="path-title">Inside band → Hold state</p><p class="path-copy">Between the thresholds, keep the prior SSO or Cash position.</p></div></div>
+        </div>
+      </aside>
+    </section>
+
+    <p class="footer">Scheduled daily at 6:15 PM New York time. Signals use adjusted closes and apply at the model close. This is an operating display, not financial advice.</p>
+  </main>
+
+  <script>
+    const money = (value) => Number.isFinite(value) ? `$${value.toFixed(2)}` : "--";
+    const pct = (value) => Number.isFinite(value) ? `${value >= 0 ? "+" : ""}${value.toFixed(2)}%` : "--";
+    const cls = (value) => value > 0 ? "positive" : value < 0 ? "negative" : "neutral";
+
+    function panelClass(state) {
+      if (state === "Cash") return "cash";
+      if (state === "SPY") return "spy";
+      return "sso";
+    }
+
+    function latestTransition(rows) {
+      return rows.slice().reverse().find((row) => row.signal && row.signal !== "No Action") || null;
+    }
+
+    function transitionRows(rows) {
+      return rows.filter((row) => row.signal && row.signal !== "No Action").slice(-12);
+    }
+
+    function bandStatus(summary) {
+      if (summary.spy_close > summary.buy_threshold) return "Above upper band";
+      if (summary.spy_close < summary.sell_threshold) return "Below lower band";
+      return "Inside SMA200 band";
+    }
+
+    function signalValue(position) {
+      return position === "SSO" ? 1 : 0;
+    }
+
+    function render(data) {
+      const summary = data.summary || {};
+      const daily = data.daily || [];
+      const first = daily[0] || {};
+      const lastTransition = latestTransition(daily);
+      const transitions = transitionRows(daily);
+      const position = summary.position || "--";
+      const currentAction = summary.current_action || summary.signal || "--";
+      const spreadPct = Number(summary.spread) * 100;
+      const leadLagPct = Number(summary.lead_lag_pct) * 100;
+      const strategyDrawdown = Number(summary.strategy_drawdown) * 100;
+      const spyDrawdown = Number(summary.spy_drawdown) * 100;
+      const maxStrategyDrawdown = Number(summary.max_strategy_drawdown) * 100;
+      const maxSpyDrawdown = Number(summary.max_spy_drawdown) * 100;
+
+      document.getElementById("updated").textContent = `Latest close: ${data.last_updated || "--"} | Generated: ${data.generated_at_utc || "--"} | ${data.data_source || "--"}`;
+      document.getElementById("headlineStatus").textContent = summary.headline_status || (position === "SSO" ? "Hold SSO" : "Hold Cash");
+      document.getElementById("requiredAction").textContent = `Required action: ${currentAction}`;
+      document.getElementById("lastTrade").textContent = `Last transition: ${lastTransition ? `${lastTransition.date}, ${lastTransition.signal}` : "--"}`;
+      document.getElementById("ruleExplanation").textContent = summary.reason || "--";
+      document.getElementById("positionPanel").className = `panel position-panel ${panelClass(position)}`;
+
+      const signal = signalValue(position);
+      const signalNode = document.getElementById("bandSignal");
+      signalNode.textContent = signal;
+      signalNode.className = `signal-value${signal === 0 ? " zero" : ""}`;
+
+      document.getElementById("spyClose").textContent = money(summary.spy_close);
+      document.getElementById("ssoClose").textContent = money(summary.sso_close);
+      document.getElementById("vixClose").textContent = Number.isFinite(summary.vix_close) ? summary.vix_close.toFixed(2) : "--";
+      document.getElementById("sma200").textContent = money(summary.sma200);
+      document.getElementById("smaDistance").innerHTML = `SMA200 distance: <span class="${cls(spreadPct)}">${pct(spreadPct)}</span>`;
+      document.getElementById("smaCondition").textContent = bandStatus(summary);
+      document.getElementById("buyThreshold").textContent = money(summary.buy_threshold);
+      document.getElementById("sellThreshold").textContent = money(summary.sell_threshold);
+      document.getElementById("bandStatus").textContent = `Band status: ${bandStatus(summary)}`;
+
+      document.getElementById("startDate").textContent = first.date || "--";
+      document.getElementById("strategyValue").textContent = money(summary.strategy_value);
+      document.getElementById("benchmarkValue").textContent = money(summary.spy_benchmark_value);
+      document.getElementById("leadLag").className = `value ${cls(summary.lead_lag_dollars)}`;
+      document.getElementById("leadLag").textContent = money(summary.lead_lag_dollars);
+      document.getElementById("leadLagPct").textContent = pct(leadLagPct);
+      document.getElementById("currentDrawdown").textContent = pct(strategyDrawdown);
+      document.getElementById("currentBenchmarkDrawdown").textContent = pct(spyDrawdown);
+      document.getElementById("strategyMaxDrawdown").textContent = pct(maxStrategyDrawdown);
+      document.getElementById("benchmarkMaxDrawdown").textContent = pct(maxSpyDrawdown);
+      document.getElementById("spreadValue").textContent = pct(spreadPct);
+
+      document.getElementById("transitionCount").textContent = `${transitions.length} transitions`;
+      document.getElementById("transitionBody").innerHTML = transitions.slice().reverse().map((row) => `
+        <tr>
+          <td>${row.date}</td>
+          <td>${row.signal === "Buy SSO" ? 1 : 0}</td>
+          <td>${row.position}</td>
+          <td>${row.signal}</td>
+          <td>${money(row.strategy_value)}</td>
+          <td class="reason">${row.reason}</td>
+        </tr>
+      `).join("") || `<tr><td colspan="6">No transitions available.</td></tr>`;
+    }
+
+    fetch("data/signals.json", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then(render)
+      .catch((error) => {
+        document.getElementById("updated").textContent = "Could not load data/signals.json";
+        document.getElementById("ruleExplanation").textContent = error.message;
+      });
+  </script>
 </body>
 </html>
