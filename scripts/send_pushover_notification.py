@@ -36,6 +36,8 @@ def main() -> None:
                     f"Action: {summary['current_action']}",
                     f"SPY: ${summary['spy_close']:.2f}",
                     f"SSO: ${summary['sso_close']:.2f}",
+                    f"20-day SPY volatility: {summary['spy_20d_volatility']:.2%}",
+                    f"Target: {summary['position']}",
                     f"SPY/SMA200 spread: {summary['spread']:+.2%}",
                     summary["reason"],
                 ]

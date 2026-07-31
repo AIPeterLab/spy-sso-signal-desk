@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Daily SPY SMA200 SSO to Cash strategy dashboard">
+  <meta name="description" content="Daily SPY SMA200 volatility-adjusted SSO strategy dashboard">
   <title>SPY/SSO Signal Desk</title>
   <style>
     :root {
@@ -267,7 +267,7 @@
         <div class="mark">SMA</div>
         <div>
           <h1>SPY/SSO Signal Desk</h1>
-          <p class="subtitle">SPY SMA200 SSO → Cash strategy</p>
+          <p class="subtitle">SPY SMA200 · volatility-adjusted SSO strategy</p>
         </div>
       </div>
       <div class="updated">
@@ -289,9 +289,9 @@
 
       <article class="panel signal-grid" aria-label="Current SPY SMA200 and market metrics">
         <div class="metric">
-          <p class="label">SMA200 Band Signal</p>
+          <p class="label">Target SSO Weight</p>
           <div class="signal-value zero" id="bandSignal">--</div>
-          <p class="note">1 = SSO mode · 0 = Cash mode</p>
+          <p class="note">1 = 100% SSO · 0.5 = 50/50 · 0 = Cash</p>
         </div>
         <div class="metric">
           <p class="label">SPY Close</p>
@@ -299,9 +299,9 @@
           <p class="note" id="smaDistance">SMA200 distance: --</p>
         </div>
         <div class="metric">
-          <p class="label">VIX Index</p>
-          <p class="value" id="vixClose">--</p>
-          <p class="note">S&P 500 volatility context only</p>
+          <p class="label">SPY 20-Day Volatility</p>
+          <p class="value" id="spyVolatility">--</p>
+          <p class="note">Annualized · allocation input</p>
         </div>
         <div class="metric">
           <p class="label">SPY SMA200</p>
@@ -333,7 +333,7 @@
       </div>
       <div class="performance-grid">
         <div class="metric"><p class="label">Starting Date</p><p class="value" id="startDate">--</p><p class="note">First actual SSO date</p></div>
-        <div class="metric"><p class="label">Strategy Value</p><p class="value" id="strategyValue">--</p><p class="note">SPY SMA200 SSO/Cash strategy</p></div>
+        <div class="metric"><p class="label">Strategy Value</p><p class="value" id="strategyValue">--</p><p class="note">Volatility-adjusted SPY/SSO strategy</p></div>
         <div class="metric"><p class="label">SPY Hold Value</p><p class="value" id="benchmarkValue">--</p><p class="note">Same start date and dollars</p></div>
         <div class="metric"><p class="label">Strategy vs SPY</p><p class="value" id="leadLag">--</p><p class="note" id="leadLagPct">--</p></div>
         <div class="metric"><p class="label">Current Drawdown</p><p class="value" id="currentDrawdown">--</p><p class="note">Strategy below prior peak</p></div>
@@ -359,10 +359,11 @@
       <aside class="panel">
         <div class="section-head"><h2>Decision Path</h2></div>
         <div class="path">
-          <div class="path-step"><span class="step-number">1</span><div><p class="path-title">Use completed SPY close</p><p class="path-copy">Signals are calculated after the completed close and affect the next trading day.</p></div></div>
-          <div class="path-step"><span class="step-number">2</span><div><p class="path-title">Above upper band → SSO</p><p class="path-copy">Buy or hold SSO when SPY closes strictly above SMA200 × 1.01.</p></div></div>
-          <div class="path-step"><span class="step-number">3</span><div><p class="path-title">Below lower band → Cash</p><p class="path-copy">Sell SSO and move to Cash when SPY closes strictly below SMA200 × 0.99.</p></div></div>
-          <div class="path-step"><span class="step-number">4</span><div><p class="path-title">Inside band → Hold state</p><p class="path-copy">Between the thresholds, keep the prior SSO or Cash position.</p></div></div>
+          <div class="path-step"><span class="step-number">1</span><div><p class="path-title">Use the completed SPY close</p><p class="path-copy">Calculate SMA200 and 20-day annualized SPY volatility after the market close.</p></div></div>
+          <div class="path-step"><span class="step-number">2</span><div><p class="path-title">Set the SMA200 trend state</p><p class="path-copy">Above SMA200 × 1.01 turns risk-on. Below SMA200 × 0.99 turns risk-off and targets 100% Cash.</p></div></div>
+          <div class="path-step"><span class="step-number">3</span><div><p class="path-title">Inside the bands, keep the trend</p><p class="path-copy">Between the upper and lower bands, retain the prior risk-on or risk-off trend state.</p></div></div>
+          <div class="path-step"><span class="step-number">4</span><div><p class="path-title">Apply volatility when risk-on</p><p class="path-copy">At or below 15% → 100% SSO. Above 15% through 25% → 50% SSO / 50% SPY. Above 25% → 100% Cash.</p></div></div>
+          <div class="path-step"><span class="step-number">5</span><div><p class="path-title">Use the target next trading day</p><p class="path-copy">Any SMA200 or volatility threshold change after the close creates a rebalance signal for the next trading day.</p></div></div>
         </div>
       </aside>
     </section>
@@ -395,8 +396,8 @@
       return "Inside SMA200 band";
     }
 
-    function signalValue(position) {
-      return position === "SSO" ? 1 : 0;
+    function signalValue(summary) {
+      return Number(summary.target_sso_pct || 0);
     }
 
     function render(data) {
@@ -421,14 +422,14 @@
       document.getElementById("ruleExplanation").textContent = summary.reason || "--";
       document.getElementById("positionPanel").className = `panel position-panel ${panelClass(position)}`;
 
-      const signal = signalValue(position);
+      const signal = signalValue(summary);
       const signalNode = document.getElementById("bandSignal");
-      signalNode.textContent = signal;
+      signalNode.textContent = signal.toFixed(1).replace(".0", "");
       signalNode.className = `signal-value${signal === 0 ? " zero" : ""}`;
 
       document.getElementById("spyClose").textContent = money(summary.spy_close);
       document.getElementById("ssoClose").textContent = money(summary.sso_close);
-      document.getElementById("vixClose").textContent = Number.isFinite(summary.vix_close) ? summary.vix_close.toFixed(2) : "--";
+      document.getElementById("spyVolatility").textContent = Number.isFinite(summary.spy_20d_volatility) ? pct(summary.spy_20d_volatility * 100) : "--";
       document.getElementById("sma200").textContent = money(summary.sma200);
       document.getElementById("smaDistance").innerHTML = `SMA200 distance: <span class="${cls(spreadPct)}">${pct(spreadPct)}</span>`;
       document.getElementById("smaCondition").textContent = bandStatus(summary);
@@ -452,7 +453,7 @@
       document.getElementById("transitionBody").innerHTML = transitions.slice().reverse().map((row) => `
         <tr>
           <td>${row.date}</td>
-          <td>${row.signal === "Buy SSO" ? 1 : 0}</td>
+          <td>${Number(row.target_sso_pct || 0).toFixed(1).replace(".0", "")}</td>
           <td>${row.position}</td>
           <td>${row.signal}</td>
           <td>${money(row.strategy_value)}</td>

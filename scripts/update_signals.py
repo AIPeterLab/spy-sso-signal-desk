@@ -126,11 +126,12 @@ def main() -> int:
             "strategy": {
                 "signal_source": "SPY adjusted daily close",
                 "indicator": "SPY 200-day simple moving average",
-                "invested_asset": "SSO",
+                "invested_assets": "SSO and SPY",
                 "defensive_position": "Cash",
                 "benchmark": "SPY Hold",
                 "buy_rule": "SPY adjusted close > SMA200 × 1.01",
                 "sell_rule": "SPY adjusted close < SMA200 × 0.99",
+                "volatility_rule": "Risk-on target is SSO at <=15%, 50% SSO / 50% SPY above 15% through 25%, and Cash above 25%.",
                 "timing": "Signals are calculated after the close and apply to the next trading day.",
             },
             "summary": {

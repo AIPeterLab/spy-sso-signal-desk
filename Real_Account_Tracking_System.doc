@@ -1,23 +1,334 @@
 <html>
-<head><meta charset="utf-8"><title>SPY Real Account Tracking System</title>
-<style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.4;color:#111}h1{font-size:20pt}h2{font-size:14pt;margin-top:20px}h3{font-size:12pt}table{border-collapse:collapse;width:100%;margin:8px 0 16px}th,td{border:1px solid #999;padding:6px 8px;vertical-align:top}th{background:#e8eef7}.note{background:#fff7dd;border:1px solid #d7b95e;padding:9px 11px}</style>
+<head>
+<meta charset="utf-8">
+<title>SPY Volatility-Adjusted Real Account Tracking System</title>
+<style>
+body {
+  font-family: Calibri, Arial, sans-serif;
+  font-size: 11pt;
+  color: #111111;
+  line-height: 1.38;
+}
+h1 {
+  font-size: 20pt;
+  margin-bottom: 8px;
+}
+h2 {
+  font-size: 14pt;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+h3 {
+  font-size: 12pt;
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0 16px 0;
+}
+th, td {
+  border: 1px solid #999999;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+th {
+  background: #e8eef7;
+  font-weight: bold;
+}
+ul, ol {
+  margin-top: 6px;
+}
+li {
+  margin-bottom: 4px;
+}
+.note {
+  background: #fff7dd;
+  border: 1px solid #d7b95e;
+  padding: 9px 11px;
+  margin: 10px 0 14px 0;
+}
+code {
+  font-family: Consolas, "Courier New", monospace;
+}
+</style>
 </head>
 <body>
-<h1>SPY Real Account Tracking System</h1>
-<div class="note">Main version: <b>SPY SMA200 / SSO timing strategy</b>. Benchmark: <b>SPY Hold</b>. The strategy holds SSO above the upper SMA200 band and Cash below the lower band.</div>
-<h2>Purpose</h2>
-<p>The system identifies the current SSO-or-Cash model position, today’s after-close action, real brokerage holdings, performance versus SPY Hold, drawdowns, and informational spread-cycle context.</p>
-<h2>Strategy Rules</h2>
-<ul><li>Use SPY adjusted daily close and its 200-day simple moving average.</li><li>Use actual SSO adjusted close for invested model returns. Never use synthetic SSO data.</li><li>Buy or hold SSO when SPY adjusted close is greater than SMA200 × 1.01.</li><li>Sell SSO and move to Cash when SPY adjusted close is less than SMA200 × 0.99.</li><li>Between the bands, keep the prior position.</li><li>Signals are checked after the close and the resulting holding earns the next trading day’s return.</li><li>Cash earns 0% in the model.</li></ul>
-<h2>Spread Analysis</h2>
-<p>SPY/SMA200 spread equals SPY adjusted close divided by SMA200, minus one. Each SSO buy-to-sell period is a spread cycle. The high-range floor is the cycle’s 90th-percentile spread. This analysis is informational and is not an additional trading rule.</p>
-<h2>Benchmark</h2>
-<p>SPY Hold begins on the same tracking date and with the same starting value as the strategy. It remains fully invested in SPY.</p>
-<h2>Daily Process</h2>
-<ol><li>After market close, update SPY and SSO adjusted closes.</li><li>Refresh SMA200, upper and lower thresholds, and spread.</li><li>Review the model signal and next-day target.</li><li>Place a real trade only after confirming the data and target.</li><li>Record every executed trade with actual shares and fill price.</li><li>Reconcile actual SSO shares and cash against the model target.</li></ol>
-<h2>Real Account Rules</h2>
-<ul><li>Use actual brokerage shares, cash, and fill prices.</li><li>SSO market value equals shares times current SSO price; account value equals SSO market value plus cash.</li><li>Keep model and brokerage values separate.</li><li>Never silently change historical trade records; add a correction record or make an explicit documented edit.</li><li>Reconcile weekly and against brokerage statements monthly.</li><li>Do not change the strategy without creating and testing a new version.</li><li>If data or interpretation is unclear, do not trade until checked.</li></ul>
-<h2>Dashboard Metrics</h2>
-<p>Track current model position and action, SPY and SSO closes, SMA200 and bands, spread, strategy and SPY Hold values, dollar and percentage lead or lag, current and maximum drawdown, spread-cycle metrics, real-account value, allocation difference, and latest signal reason.</p>
-<p><b>Disclaimer:</b> Research and tracking only; not financial advice.</p>
-</body></html>
+
+<h1>SPY Volatility-Adjusted Real Account Tracking System</h1>
+
+<p>
+This document explains how to track the real volatility-adjusted SPY/SSO strategy account so another person can follow the system without needing to read the backtest scripts.
+</p>
+
+<div class="note">
+Main version to track: <b>SPY SMA200 / volatility-adjusted SSO strategy</b>. The benchmark is <b>SPY Hold</b>. The SMA200 bands determine whether the strategy is risk-on or risk-off. During risk-on periods, SPY 20-day annualized volatility determines whether the account holds SSO, a 50/50 SSO-SPY blend, or Cash.
+</div>
+
+<h2>1. Purpose</h2>
+
+<p>The tracking system should answer five questions every trading day:</p>
+
+<ol>
+<li>What is the current target allocation: SSO, 50/50 SSO-SPY, or Cash?</li>
+<li>Does today's close create a buy, sell, or no-action signal?</li>
+<li>What are the real account SPY shares, SSO shares, cash, and total value?</li>
+<li>How is the real account doing compared with SPY Hold?</li>
+<li>Is SPY/SMA200 spread near the current cycle's local high range?</li>
+</ol>
+
+<h2>2. Strategy Rules</h2>
+
+<h3>Strategy States</h3>
+
+<table>
+<tr><th>State</th><th>Meaning</th><th>Purpose</th></tr>
+<tr><td>Cash</td><td>Hold no SPY or SSO.</td><td>Used when the SMA200 model is risk-off or when risk-on volatility is above 25%.</td></tr>
+<tr><td>50% SSO / 50% SPY</td><td>Allocate half of the account to SSO and half to SPY.</td><td>Used during risk-on periods when 20-day annualized SPY volatility is above 15% and at or below 25%.</td></tr>
+<tr><td>SSO</td><td>Allocate 100% of the account to SSO.</td><td>Used during risk-on periods when 20-day annualized SPY volatility is at or below 15%.</td></tr>
+</table>
+
+<h3>Indicator</h3>
+
+<ul>
+<li>Use SPY adjusted daily close.</li>
+<li>Calculate SPY 200-day simple moving average, called SMA200.</li>
+<li>Calculate SPY daily adjusted-close returns.</li>
+<li>Calculate the sample standard deviation of the latest 20 SPY daily returns and multiply it by the square root of 252. This is the 20-day annualized SPY volatility.</li>
+<li>Use SSO adjusted daily close for strategy returns when invested.</li>
+<li>Do not use synthetic SSO data for live account tracking.</li>
+</ul>
+
+<h3>Buy Rule</h3>
+
+<p>Buy or hold SSO when:</p>
+
+<ul>
+<li>SPY adjusted close is greater than SMA200 x 1.01.</li>
+</ul>
+
+<p>This means SPY is more than 1% above its SMA200.</p>
+
+<h3>Sell Rule</h3>
+
+<p>Sell SSO and move to Cash when:</p>
+
+<ul>
+<li>SPY adjusted close is less than SMA200 x 0.99.</li>
+</ul>
+
+<p>This means SPY is more than 1% below its SMA200.</p>
+
+<h3>Hold Rule</h3>
+
+<p>If SPY is between the buy and sell bands:</p>
+
+<ul>
+<li>Keep the prior holding.</li>
+<li>If already in SSO, stay in SSO.</li>
+<li>If already in Cash, stay in Cash.</li>
+</ul>
+
+<h3>Volatility Allocation Rule</h3>
+
+<p>First determine the SMA200 trend state. If the trend state is Cash, the target allocation is 100% Cash. If the trend state is risk-on, use the latest 20-day annualized SPY volatility:</p>
+
+<table>
+<tr><th>20-Day Annualized SPY Volatility</th><th>Target Allocation</th><th>Account Exposure</th></tr>
+<tr><td>15.00% or lower</td><td>100% SSO</td><td>Full leveraged risk-on allocation.</td></tr>
+<tr><td>Above 15.00% through 25.00%</td><td>50% SSO / 50% SPY</td><td>Reduced leveraged exposure.</td></tr>
+<tr><td>Above 25.00%</td><td>100% Cash</td><td>Temporary defensive allocation even if the SMA200 trend remains risk-on.</td></tr>
+</table>
+
+<p>Recalculate the target after every trading-day close. A volatility threshold crossing is a rebalance signal. Continue checking the SMA200 trend state while the volatility overlay is in Cash.</p>
+
+<h3>Trade Timing</h3>
+
+<ul>
+<li>Signals are checked after the daily close.</li>
+<li>Determine the SMA200 trend state first, then determine the volatility-based target allocation.</li>
+<li>The target allocation changes after that close and is used for the next trading day's return.</li>
+<li>When the model is in SSO, the strategy earns the daily SSO adjusted-close return.</li>
+<li>When the model is in the 50/50 allocation, the strategy earns 50% of the daily SSO return plus 50% of the daily SPY return.</li>
+<li>When the model is in Cash, the strategy earns 0% daily return.</li>
+<li>Use actual fills for the real account and record any commission, spread, slippage, or tax-lot effect separately.</li>
+</ul>
+
+<h3>Backtest Reference</h3>
+
+<p>Using 4,273 rolling 756-trading-day periods from June 21, 2006 through June 17, 2026, the volatility-adjusted version recovered the initial $1,000 in 99.67% of periods. Its worst three-year ending value was $952.19. A full-period $1,000 investment ended at $15,463.11, a total return of 1,446.31%. These figures exclude trading costs, taxes, slippage, and interest on cash and do not guarantee future results.</p>
+
+<h2>3. SPY/SMA200 Spread Analysis</h2>
+
+<p>
+The spread is an analysis-only indicator. It helps show whether SPY is stretched above its SMA200, but it is not currently a trading rule.
+</p>
+
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>SPY/SMA200 spread</td><td>SPY adjusted close divided by SMA200, minus 1.</td></tr>
+<tr><td>Buy spread threshold</td><td>+1.00%. This matches the buy rule.</td></tr>
+<tr><td>Sell spread threshold</td><td>-1.00%. This matches the sell rule.</td></tr>
+<tr><td>Spread cycle</td><td>Each SMA200 risk-on cycle, starting from a buy signal and ending at a sell signal.</td></tr>
+<tr><td>Cycle high floor</td><td>The 90th percentile spread inside that cycle. This is the start of the local high range.</td></tr>
+<tr><td>Cycle max spread</td><td>The highest spread reached inside that cycle.</td></tr>
+<tr><td>In cycle high range?</td><td>Yes if the current spread is at or above the cycle high floor.</td></tr>
+</table>
+
+<p>
+Use this as a warning/context field. It does not override the SMA200 trend state or the volatility allocation rule.
+</p>
+
+<h2>4. Benchmark Rules</h2>
+
+<ul>
+<li>Benchmark is SPY Hold.</li>
+<li>Benchmark starts on the same live tracking start date as the real account.</li>
+<li>Benchmark starts with the same starting value as the real account.</li>
+<li>Benchmark remains fully invested in SPY.</li>
+<li>Compare real strategy value against benchmark value daily.</li>
+</ul>
+
+<h2>5. Real Account Workbook Structure</h2>
+
+<table>
+<tr><th>Tab</th><th>Purpose</th><th>Main Columns</th></tr>
+<tr>
+<td>settings</td>
+<td>Manual inputs that define the account and tracking rules.</td>
+<td>Start date, starting account value, account name, benchmark, commission/slippage assumption, current mode.</td>
+</tr>
+<tr>
+<td>prices</td>
+<td>Daily market data and indicators.</td>
+<td>Date, SPY adjusted close, SSO adjusted close, SPY daily return, SPY SMA200, buy threshold, sell threshold, SPY/SMA200 spread, 20-day annualized SPY volatility.</td>
+</tr>
+<tr>
+<td>model_signal</td>
+<td>Daily model state and action.</td>
+<td>Trend state, volatility state, target SPY percentage, target SSO percentage, target cash percentage, signal, trade reason, spread cycle, in high range.</td>
+</tr>
+<tr>
+<td>real_account</td>
+<td>Actual holdings and account value.</td>
+<td>SPY shares, SSO shares, cash, SPY market value, SSO market value, total account value, real allocation, difference from model target.</td>
+</tr>
+<tr>
+<td>trade_log</td>
+<td>Permanent record of real trades.</td>
+<td>Date, account, buy/sell, symbol, shares, price, dollar amount, reason, entered by, notes.</td>
+</tr>
+<tr>
+<td>benchmark</td>
+<td>SPY Hold comparison from the same real start date.</td>
+<td>Benchmark SPY shares, benchmark value, benchmark return, strategy value, lag/lead versus benchmark.</td>
+</tr>
+<tr>
+<td>dashboard</td>
+<td>One-page view for decision making.</td>
+<td>Trend state, 20-day volatility, target allocation, required action, current account value, SPY benchmark value, drawdown, spread status, latest trade reason.</td>
+</tr>
+</table>
+
+<h2>6. Daily Update Process</h2>
+
+<ol>
+<li>After market close, update SPY and SSO adjusted close prices.</li>
+<li>Refresh SPY SMA200, buy threshold, sell threshold, SPY/SMA200 spread, and 20-day annualized SPY volatility.</li>
+<li>Determine the SMA200 trend state for the current day.</li>
+<li>Apply the volatility allocation rule and calculate the target SPY, SSO, and Cash percentages.</li>
+<li>If the target allocation is unchanged, record "no action" in the dashboard.</li>
+<li>If the target allocation changed, calculate the required SPY and SSO shares using the real account value.</li>
+<li>Prepare all necessary buys and sells to move the account to the new target allocation.</li>
+<li>Place the real trade only after confirming the signal and target allocation.</li>
+<li>Record every executed trade in trade_log.</li>
+<li>Update real_account using actual fill prices, not theoretical close prices.</li>
+<li>Review dashboard after the trade is logged.</li>
+</ol>
+
+<h2>7. How to Track Real Shares</h2>
+
+<p>Use actual account data for the real account. Do not overwrite real fills with model prices.</p>
+
+<table>
+<tr><th>Field</th><th>How to Update</th></tr>
+<tr><td>SPY shares</td><td>Previous SPY shares plus buys minus sells.</td></tr>
+<tr><td>SSO shares</td><td>Previous SSO shares plus buys minus sells.</td></tr>
+<tr><td>Cash</td><td>Previous cash minus buys plus sells, after fees if any.</td></tr>
+<tr><td>SSO market value</td><td>SSO shares x SSO price.</td></tr>
+<tr><td>SPY market value</td><td>SPY shares x SPY price.</td></tr>
+<tr><td>Account value</td><td>SPY market value + SSO market value + cash.</td></tr>
+<tr><td>Model difference</td><td>Real account value by asset minus target model value by asset.</td></tr>
+</table>
+
+<h2>8. Dashboard Metrics</h2>
+
+<table>
+<tr><th>Metric</th><th>Meaning</th></tr>
+<tr><td>Current trend state</td><td>Risk-on or Cash based on the SMA200 bands.</td></tr>
+<tr><td>20-day annualized SPY volatility</td><td>The volatility input used to select the risk-on allocation.</td></tr>
+<tr><td>Current target allocation</td><td>100% SSO, 50% SSO / 50% SPY, or 100% Cash.</td></tr>
+<tr><td>Required action</td><td>No action or the SPY/SSO trades required to reach the current target allocation.</td></tr>
+<tr><td>Real account value</td><td>Actual value using current SSO shares and cash.</td></tr>
+<tr><td>SPY Hold benchmark value</td><td>What the account would be worth if it bought and held SPY.</td></tr>
+<tr><td>Strategy vs benchmark</td><td>Dollar and percent lead or lag versus SPY Hold.</td></tr>
+<tr><td>Current drawdown</td><td>Drop from the account's prior high value.</td></tr>
+<tr><td>Max drawdown</td><td>Worst drawdown since live tracking began.</td></tr>
+<tr><td>SPY/SMA200 spread</td><td>How far SPY is above or below SMA200.</td></tr>
+<tr><td>In cycle high range?</td><td>Analysis-only warning that SPY is near the local high spread range for this SSO cycle.</td></tr>
+<tr><td>Latest trade reason</td><td>Plain-English reason for the most recent trade signal.</td></tr>
+</table>
+
+<h2>9. Weekly Review Checklist</h2>
+
+<ul>
+<li>Confirm all daily SPY and SSO prices are updated.</li>
+<li>Confirm real SPY shares, SSO shares, and cash match brokerage records.</li>
+<li>Confirm every real trade appears in trade_log.</li>
+<li>Check whether the real account allocation matches the model's SPY, SSO, and Cash targets.</li>
+<li>Confirm the 20-day volatility calculation and threshold classification.</li>
+<li>Review current drawdown and lag versus SPY Hold.</li>
+<li>Review SPY/SMA200 spread and whether current price is in the cycle high range.</li>
+<li>Check whether any manual override was made and write the reason in notes.</li>
+</ul>
+
+<h2>10. Monthly Review Checklist</h2>
+
+<ul>
+<li>Export or save the brokerage statement.</li>
+<li>Reconcile account value against the workbook.</li>
+<li>Review monthly return versus SPY Hold.</li>
+<li>Review max drawdown and recovery progress.</li>
+<li>Review the number of volatility-driven rebalances and their estimated trading costs.</li>
+<li>Do not change strategy rules unless a separate backtest is created and saved.</li>
+</ul>
+
+<h2>11. File References in SPY_ave</h2>
+
+<table>
+<tr><th>File</th><th>Use</th></tr>
+<tr><td>SPY_SMA200_SSO_strategy_rules.doc</td><td>Simple rule document for the selected SPY strategy.</td></tr>
+<tr><td>SPY_SMA200_SSO_strategy.xls</td><td>Main workbook with summary, drawdowns, calendar-year cycles, and raw daily data.</td></tr>
+<tr><td>SPY_SMA200_SSO_strategy_raw_daily.csv</td><td>Daily data for SPY, SSO, SMA200, spread, signal, position, and values.</td></tr>
+<tr><td>SPY_SMA200_SSO_strategy_calendar_cycle_summary.csv</td><td>Calendar-year cycle summary.</td></tr>
+<tr><td>SPY_SMA200_SSO_strategy_calendar_cycle_detail.csv</td><td>Every calendar-year cycle result.</td></tr>
+<tr><td>SPY_SMA200_SSO_spread_cycle_highs.csv</td><td>Spread high range by SSO in/out cycle.</td></tr>
+</table>
+
+<h2>12. Important Operating Rules</h2>
+
+<ul>
+<li>Use adjusted close data for model signals.</li>
+<li>Use actual fill prices for real account tracking.</li>
+<li>Do not mix model value and real account value.</li>
+<li>Do not change historical trade_log rows after they are recorded; add correction rows instead.</li>
+<li>Do not change the strategy rules inside the live tracking workbook without creating a new version.</li>
+<li>Cash is required when SPY breaks below the SMA200 lower band or when risk-on 20-day annualized SPY volatility exceeds 25%.</li>
+<li>Crossing 15% or 25% volatility after the close creates a target-allocation rebalance for the next trading day.</li>
+<li>The spread high-range field is analysis-only and never overrides the approved allocation rules.</li>
+<li>If a signal is unclear, do not trade until the data and rule interpretation are checked.</li>
+</ul>
+
+</body>
+</html>
