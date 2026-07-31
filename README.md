@@ -1,8 +1,8 @@
 # SPY/SSO Signal Desk
 
-Static dashboard for the **SPY SMA200 SSO -> Cash strategy**.
+Static dashboard for the **SPY SMA200 / volatility-adjusted SSO strategy**.
 
-The signal source is SPY adjusted close. The model holds SSO while SPY remains above the upper SMA200 band, moves to Cash below the lower SMA200 band, and holds the prior state inside the band.
+The signal source is SPY adjusted close. SMA200 bands determine risk-on or risk-off. During risk-on periods, 20-day annualized SPY volatility sets the target to SSO, a 50/50 SSO-SPY blend, or Cash.
 
 ## Files
 
@@ -18,19 +18,22 @@ The signal source is SPY adjusted close. The model holds SSO while SPY remains a
 ## Exact Rules
 
 1. Signal source is SPY adjusted daily close.
-2. Invested asset is SSO.
-3. Defensive position is Cash.
+2. Risk-on assets are SSO and SPY; the defensive position is Cash.
 4. Benchmark is SPY Hold from the same start date and initial value.
 5. Buy or hold SSO when SPY adjusted close is strictly above `SMA200 x 1.01`.
 6. Sell SSO and move to Cash when SPY adjusted close is strictly below `SMA200 x 0.99`.
-7. Between the thresholds, maintain the previous SSO or Cash position.
+7. Between the thresholds, maintain the previous SMA200 trend state.
 8. Signals are calculated after the close and affect the next trading day.
 9. SSO returns use actual Yahoo Finance adjusted-close data. Synthetic SSO history is not used.
-10. VIX and spread-cycle fields are context only. They are not additional trading rules.
+10. When risk-on, target 100% SSO at 20-day annualized SPY volatility of 15% or lower.
+11. When risk-on, target 50% SSO / 50% SPY above 15% through 25% volatility.
+12. Target Cash when risk-off or when risk-on volatility is above 25%.
+13. Volatility threshold crossings after the close create a next-day rebalance signal.
+14. VIX and spread-cycle fields are context only. They are not additional trading rules.
 
 ## Data And Performance
 
-The updater uses Yahoo Finance chart API adjusted-close data for SPY and SSO, plus VIX index closes for context. Model tracking starts with `$1,000` on SSO's first available date. The benchmark is SPY Hold from the same date and initial value.
+The updater uses Yahoo Finance chart API adjusted-close data for SPY and SSO, plus VIX index closes for context. It calculates 20-day annualized SPY volatility from the sample standard deviation of adjusted-close returns. Model tracking starts with `$1,000` on SSO's first available date. The benchmark is SPY Hold from the same date and initial value.
 
 Run locally:
 

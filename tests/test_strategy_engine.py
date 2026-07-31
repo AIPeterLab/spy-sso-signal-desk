@@ -6,6 +6,8 @@ from scripts.strategy_engine import (
     build_daily_rows,
     calendar_cycles,
     maximum_drawdown,
+    allocation_for_state,
+    rolling_annualized_volatility,
     signal_for_close,
     simple_moving_average,
 )
@@ -29,6 +31,21 @@ class StrategyEngineTests(unittest.TestCase):
         self.assertEqual(signal_for_close(100, 100, "SSO")[1], "SSO")
         self.assertEqual(signal_for_close(100, 100, "Cash")[1], "Cash")
 
+    def test_volatility_uses_sample_standard_deviation(self):
+        prices = [100.0]
+        for daily_return in ([0.01, -0.01] * 10):
+            prices.append(prices[-1] * (1 + daily_return))
+        result = rolling_annualized_volatility(prices)
+        self.assertIsNone(result[19])
+        self.assertAlmostEqual(result[20], 0.01 * (20 / 19) ** 0.5 * 252 ** 0.5)
+
+    def test_volatility_allocation_thresholds(self):
+        self.assertEqual(allocation_for_state("Cash", 0.10)[0], "Cash")
+        self.assertEqual(allocation_for_state("SSO", 0.15)[0], "SSO")
+        self.assertEqual(allocation_for_state("SSO", 0.150001)[0], "50% SSO / 50% SPY")
+        self.assertEqual(allocation_for_state("SSO", 0.25)[0], "50% SSO / 50% SPY")
+        self.assertEqual(allocation_for_state("SSO", 0.250001)[0], "Cash")
+
     def test_signal_applies_next_trading_day(self):
         spy = {"2024-01-01": 100, "2024-01-02": 102, "2024-01-03": 103}
         sso = {"2024-01-01": 10, "2024-01-02": 11, "2024-01-03": 12.1}
@@ -43,20 +60,18 @@ class StrategyEngineTests(unittest.TestCase):
         self.assertEqual(built[0].strategy_return, 0)
 
     def test_next_day_return_with_forced_buy(self):
-        spy = {
-            "2024-01-01": 100,
-            "2024-01-02": 100,
-            "2024-01-03": 103,
-            "2024-01-04": 104,
-        }
-        sso = {
-            "2024-01-01": 10,
-            "2024-01-02": 10,
-            "2024-01-03": 11,
-            "2024-01-04": 12.1,
-        }
+        spy = {}
+        sso = {}
+        spy_price = 100.0
+        sso_price = 10.0
+        for day in range(1, 25):
+            date_key = f"2024-01-{day:02d}"
+            spy[date_key] = spy_price
+            sso[date_key] = sso_price
+            spy_price *= 1.03
+            sso_price *= 1.10
         rows = build_daily_rows(spy, sso, sma_window=2)
-        buy_row = next(row for row in rows if row.signal == "Buy SSO")
+        buy_row = next(row for row in rows if row.signal == "Rebalance to SSO")
         self.assertEqual(buy_row.strategy_return, 0)
         following = rows[rows.index(buy_row) + 1]
         self.assertAlmostEqual(following.strategy_return, 0.10)
@@ -79,9 +94,9 @@ class StrategyEngineTests(unittest.TestCase):
 
     def test_spread_cycles(self):
         rows = [
-            DailyRow("2024-01-01", 100, 10, spread=0.02, signal="Buy SSO", position="SSO"),
+            DailyRow("2024-01-01", 100, 10, spread=0.02, trend_signal="Buy SSO", position="SSO"),
             DailyRow("2024-01-02", 101, 11, spread=0.05, position="SSO"),
-            DailyRow("2024-01-03", 99, 9, spread=-0.02, signal="Sell to Cash", position="Cash"),
+            DailyRow("2024-01-03", 99, 9, spread=-0.02, trend_signal="Sell to Cash", position="Cash"),
         ]
         cycles = attach_spread_cycles(rows)
         self.assertEqual(len(cycles), 1)
