@@ -58,12 +58,14 @@ code {
 
 <h1>SPY Volatility-Adjusted Real Account Tracking System</h1>
 
+<p><b>Strategy Name:</b> SPY SMA200 / Volatility-Adjusted SSO Strategy</p>
+
 <p>
 This document explains how to track the real volatility-adjusted SPY/SSO strategy account so another person can follow the system without needing to read the backtest scripts.
 </p>
 
 <div class="note">
-Main version to track: <b>SPY SMA200 / volatility-adjusted SSO strategy</b>. The benchmark is <b>SPY Hold</b>. The SMA200 bands determine whether the strategy is risk-on or risk-off. During risk-on periods, SPY 20-day annualized volatility determines whether the account holds SSO, a 50/50 SSO-SPY blend, or Cash.
+Main version to track: <b>SPY SMA200 / Volatility-Adjusted SSO Strategy</b>. The benchmark is <b>SPY Hold</b>. The SMA200 bands determine whether the strategy is risk-on or risk-off. During risk-on periods, SPY 20-day annualized volatility determines whether the account holds SSO, a 50/50 SSO-SPY blend, or Cash.
 </div>
 
 <h2>1. Purpose</h2>
