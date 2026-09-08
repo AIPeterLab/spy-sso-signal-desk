@@ -12,7 +12,7 @@ At handoff time:
 - Default branch: `main`
 - Migration backup branch: `agent/add-volatility-adjusted-sso-strategy`
 - The migration branch contains the volatility-adjusted strategy work and is intentionally not merged or rebased during this backup.
-- The migration branch has one unique commit and is 31 commits behind `origin/main`, primarily because automated daily data updates continued on `main`.
+- At the start of the audit, the migration branch had one unique strategy commit and was 31 commits behind `origin/main`. The migration documentation adds further branch-only commits, and automated daily data updates continue to advance `main`, so recheck divergence before integration.
 - The test suite passes: 12 tests on 2026-09-08.
 
 For an exact recovery of this handoff branch:
