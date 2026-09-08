@@ -3,3 +3,14 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 .wrangler/
+
+# Local secrets and credentials. Keep only redacted examples in Git.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+secrets.json
