@@ -1,0 +1,30 @@
+{
+  "data_source": "Yahoo Finance chart API adjusted close",
+  "spmo_inception_date": "2015-10-09",
+  "first_spmo_adjusted_close_date": "2015-10-12",
+  "last_spmo_adjusted_close_date": "2026-08-04",
+  "start_year_used": 2015,
+  "cycle_lengths": [
+    3,
+    5
+  ],
+  "output_csv": "data\\spmo_cycle_comparison.csv",
+  "output_markdown": "data\\spmo_cycle_comparison.md",
+  "records": 16,
+  "strategy_wins": 7,
+  "spmo_wins": 9,
+  "strategy_beats_spy": 12,
+  "full_history": {
+    "start_date": "2015-10-12",
+    "end_date": "2026-08-04",
+    "strategy_final": 4606.186992,
+    "spy_final": 4571.314877,
+    "spmo_final": 6797.504868,
+    "strategy_return": 3.606187,
+    "spy_return": 3.571315,
+    "spmo_return": 5.797505,
+    "strategy_max_drawdown": -0.296919,
+    "spy_max_drawdown": -0.337173,
+    "spmo_max_drawdown": -0.309475
+  }
+}

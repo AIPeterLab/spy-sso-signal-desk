@@ -44,7 +44,7 @@ python -m unittest discover -s tests -v
 
 ## Automation
 
-GitHub Actions checks at 22:15 and 23:15 UTC and updates only when the New York hour is 6 PM, maintaining an effective 6:15 PM New York schedule through daylight-saving changes.
+The AIPeterLab Cloudflare Worker owns the daily schedule and dispatches the GitHub Actions workflow at approximately 6:15 PM New York time. The workflow also supports manual dispatch.
 
 Pushover uses these repository secrets:
 
@@ -66,6 +66,10 @@ Use these Pages settings:
 - Environment variables: none required
 
 Attach the custom domain `sso.aipeterlab.com` in the Cloudflare Pages project. The Cloudflare Worker owns the daily timing, dispatches the GitHub Actions workflow, and that workflow pushes updated data files to `main`; Cloudflare Pages redeploys from GitHub after those pushes.
+
+## Project Continuity
+
+Codex and contributor instructions are in `AGENTS.md`. Account-migration and recovery details are in `MIGRATION_HANDOFF.md`.
 
 ## Disclaimer
 
