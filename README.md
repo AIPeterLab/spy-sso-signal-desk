@@ -12,7 +12,7 @@ The signal source is SPY adjusted close. SMA200 bands determine risk-on or risk-
 - `data/calendar_cycles.csv` contains 1, 2, 3, 5, and 10-year calendar cycles.
 - `data/spread_cycles.csv` contains SPY/SMA200 spread-cycle context.
 - `scripts/update_signals.py` downloads adjusted closes and rebuilds the model.
-- `scripts/send_pushover_notification.py` sends the post-refresh phone alert.
+- `scripts/send_ntfy_notification.py` sends the post-refresh phone alert through ntfy.
 - `Real_Account_Tracking_System.doc` is the governing operating manual.
 
 ## Exact Rules
@@ -46,10 +46,7 @@ python -m unittest discover -s tests -v
 
 The AIPeterLab Cloudflare Worker owns the daily schedule and dispatches the GitHub Actions workflow at approximately 6:15 PM New York time. The workflow also supports manual dispatch.
 
-Pushover uses these repository secrets:
-
-- `PUSHOVER_APP_TOKEN`
-- `PUSHOVER_USER_KEY`
+Phone alerts are published to the shared `aipeterlab-market-alert-1` ntfy topic. No repository secret is required for notification delivery.
 
 ## Cloudflare Pages
 

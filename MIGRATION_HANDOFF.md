@@ -30,7 +30,7 @@ python -m unittest discover -s tests -v
 - `index.html` and `_headers`: static dashboard and Cloudflare Pages response headers.
 - `scripts/strategy_engine.py`: model calculations and core strategy logic.
 - `scripts/update_signals.py`: public-data download and generated dashboard outputs.
-- `scripts/send_pushover_notification.py`: optional notification delivery.
+- `scripts/send_ntfy_notification.py`: notification delivery through the shared AIPeterLab ntfy topic.
 - `scripts/compare_spmo_cycles.py`: SPMO comparison analysis.
 - `tests/`: standard-library unit tests for strategy and updater behavior.
 - `data/`: tracked current snapshots, histories, comparison outputs, a holdings workbook, and a locally captured Roundhill JavaScript artifact.
@@ -61,8 +61,7 @@ The update and comparison commands use public network data and may rewrite track
 ## Services, settings, and secrets
 
 - GitHub hosts the repository and runs `.github/workflows/daily-update.yml` with `contents: write` permission.
-- GitHub repository secrets required only for optional phone notifications: `PUSHOVER_APP_TOKEN` and `PUSHOVER_USER_KEY`.
-- Pushover is the external notification service.
+- ntfy is the external notification service. It uses the shared `aipeterlab-market-alert-1` topic and requires no repository secret.
 - Yahoo Finance provides public market data without a repository API key.
 - Cloudflare Pages hosts the static site. Project name: `sso-signal-desk`; production branch: `main`; no framework; build command `exit 0`; output `/`; custom domain `sso.aipeterlab.com`.
 - An external AIPeterLab Cloudflare Worker dispatches the daily GitHub workflow. Its source, credentials, and configuration are not stored in this repository and must be maintained separately.
@@ -72,7 +71,7 @@ Never put secret values in this file or any tracked file. Recreate the named Git
 
 ## Unfinished work and known caveats
 
-- `scripts/send_pushover_notification.py` currently links notifications to the GitHub Pages URL, while deployment documentation names the custom domain. Confirm the intended public URL before changing it.
+- `scripts/send_ntfy_notification.py` links notifications to the GitHub Pages URL, while deployment documentation also names the custom domain. Confirm the intended public URL before changing it.
 - `Real_Account_Tracking_System.doc` describes a workbook structure, but the repository does not currently contain a live real-account workbook or private brokerage data.
 - `data/roundhill_app.js` and `data/spy_holdings.xlsx` are tracked research inputs/artifacts. Their acquisition and refresh procedure is not fully documented; preserve them unless a verified reproducible source is established.
 - The external Cloudflare scheduler is a recovery dependency outside this repository. Record or back up its Worker source and deployment settings in its owning project.
